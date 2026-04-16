@@ -1,0 +1,59 @@
+plugins {
+    id 'java'
+    id 'org.jetbrains.intellij.platform' version '2.2.1'
+}
+
+group = 'com.openapi.generator'
+version = '1.0.0'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+    toolchains {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+    intellijPlatform {
+        defaultRepositories()
+    }
+}
+
+dependencies {
+    intellijPlatform {
+        intellijIdeaCommunity('2024.3')
+        instrumentationTools()
+    }
+
+    implementation 'io.swagger.parser.v3:swagger-parser:2.1.22'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.0'
+}
+
+intellijPlatform {
+    pluginConfiguration {
+        id = 'com.openapi.generator'
+        name = 'OpenAPI Example Generator'
+        version = '1.0.0'
+        description = 'Generates realistic examples from OpenAPI specifications with an intuitive UI'
+
+        ideaVersion {
+            sinceBuild = '233'
+            untilBuild = provider { null }
+        }
+    }
+
+    signing {
+        required = false
+    }
+
+    publishing {
+        token = providers.environmentVariable('PUBLISH_TOKEN')
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+}
