@@ -1,0 +1,72 @@
+openapi: 3.1.0
+info:
+  title: Simple Test API
+  version: 1.0.0
+
+paths:
+  /items:
+    post:
+      summary: Create item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                quantity:
+                  type: integer
+                price:
+                  type: number
+                active:
+                  type: boolean
+                status:
+                  type: string
+                  enum: [ on, off ]
+                tags:
+                  type: array
+                  items:
+                    type: string
+                address:
+                  type: object
+                  properties:
+                    street:
+                      type: string
+                    city:
+                      type: string
+      responses:
+        '201':
+          description: Created
+
+components:
+  schemas:
+    User:
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "abc-123"
+        name:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+        age:
+          type: integer
+        status:
+          type: string
+          enum: [ active, inactive, pending ]
+
+    SimpleArray:
+      type: array
+      items:
+        type: integer

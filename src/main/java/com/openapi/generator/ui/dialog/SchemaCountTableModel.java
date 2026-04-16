@@ -8,6 +8,7 @@
 package com.openapi.generator.ui.dialog;
 
 import com.openapi.generator.domain.model.SchemaDefinition;
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -17,6 +18,8 @@ import javax.swing.table.AbstractTableModel;
 /** Table model for the schema selection table in the Generate Examples dialog. */
 public class SchemaCountTableModel extends AbstractTableModel {
 
+  @Serial private static final long serialVersionUID = 1L;
+
   private static final String[] COLUMN_NAMES = {
     "Schema Name", "Properties", "Description", "Examples"
   };
@@ -24,32 +27,28 @@ public class SchemaCountTableModel extends AbstractTableModel {
     String.class, Integer.class, String.class, Integer.class
   };
 
-  private final List<SchemaDefinition> schemas = new ArrayList<>();
-  private final List<Integer> exampleCounts = new ArrayList<>();
+  private final transient List<SchemaDefinition> schemas = new ArrayList<>();
+  private final transient List<Integer> exampleCounts = new ArrayList<>();
+
+  private static int parseOrDefault(String s) {
+    try {
+      return Integer.parseInt(s.trim());
+    } catch (NumberFormatException e) {
+      return -1;
+    }
+  }
 
   public void setSchemas(List<SchemaDefinition> schemas, int defaultCount) {
     this.schemas.clear();
     this.exampleCounts.clear();
     this.schemas.addAll(schemas);
-    for (int i = 0; i < schemas.size(); i++) {
-      this.exampleCounts.add(defaultCount);
-    }
+    schemas.forEach(schema -> this.exampleCounts.add(defaultCount));
     fireTableDataChanged();
   }
 
   public void setAllCounts(int count) {
-    for (int i = 0; i < exampleCounts.size(); i++) {
-      exampleCounts.set(i, Math.max(0, count));
-    }
+    exampleCounts.replaceAll(ignored -> Math.max(0, count));
     fireTableDataChanged();
-  }
-
-  public List<SchemaDefinition> getSchemas() {
-    return List.copyOf(schemas);
-  }
-
-  public int getCountForSchema(int rowIndex) {
-    return exampleCounts.get(rowIndex);
   }
 
   public int getTotalCount() {
@@ -59,7 +58,7 @@ public class SchemaCountTableModel extends AbstractTableModel {
   public Map<String, Integer> getSchemaCountMap() {
     Map<String, Integer> map = new LinkedHashMap<>();
     for (int i = 0; i < schemas.size(); i++) {
-      map.put(schemas.get(i).getName(), exampleCounts.get(i));
+      map.put(schemas.get(i).name(), exampleCounts.get(i));
     }
     return map;
   }
@@ -93,9 +92,9 @@ public class SchemaCountTableModel extends AbstractTableModel {
   public Object getValueAt(int rowIndex, int columnIndex) {
     SchemaDefinition schema = schemas.get(rowIndex);
     return switch (columnIndex) {
-      case 0 -> schema.getName();
-      case 1 -> schema.getProperties().size();
-      case 2 -> schema.getDescription() != null ? schema.getDescription() : "";
+      case 0 -> schema.name();
+      case 1 -> schema.properties().size();
+      case 2 -> schema.description() != null ? schema.description() : "";
       case 3 -> exampleCounts.get(rowIndex);
       default -> "";
     };
@@ -103,9 +102,13 @@ public class SchemaCountTableModel extends AbstractTableModel {
 
   @Override
   public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-    if (columnIndex == 3 && aValue instanceof Integer count) {
-      exampleCounts.set(rowIndex, Math.max(0, count));
-      fireTableCellUpdated(rowIndex, columnIndex);
-    }
+    if (columnIndex != 3) return;
+    int value =
+        aValue instanceof Number n
+            ? n.intValue()
+            : aValue instanceof String s ? parseOrDefault(s) : -1;
+    if (value < 0) return;
+    exampleCounts.set(rowIndex, value);
+    fireTableCellUpdated(rowIndex, columnIndex);
   }
 }

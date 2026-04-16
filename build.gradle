@@ -8,6 +8,7 @@
 plugins {
     id 'java'
     id 'org.jetbrains.intellij.platform' version '2.2.1'
+    id 'jacoco'
 }
 
 group = 'com.openapi.generator'
@@ -30,12 +31,18 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        intellijIdeaCommunity('2024.3')
+        intellijIdeaCommunity('2025.1')
         instrumentationTools()
     }
 
-    implementation 'io.swagger.parser.v3:swagger-parser:2.1.22'
+    implementation 'io.swagger.parser.v3:swagger-parser:2.1.40'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.0'
+    compileOnly 'org.projectlombok:lombok:1.18.42'
+    annotationProcessor 'org.projectlombok:lombok:1.18.42'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testImplementation 'org.junit.platform:junit-platform-launcher:1.11.4'
+    testImplementation 'org.assertj:assertj-core:3.27.3'
 }
 
 intellijPlatform {
@@ -55,4 +62,35 @@ intellijPlatform {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     options.release = 21
+    options.compilerArgs += ['-Xlint:all', '-Xlint:-processing']
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            element = 'CLASS'
+            includes = [
+                'com.openapi.generator.domain.*',
+                'com.openapi.generator.infrastructure.*',
+                'com.openapi.generator.application.*'
+            ]
+            limit {
+                counter = 'LINE'
+                minimum = 0.80
+            }
+        }
+    }
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
 }

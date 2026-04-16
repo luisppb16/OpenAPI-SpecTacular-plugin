@@ -13,11 +13,15 @@ import com.openapi.generator.domain.model.SchemaDefinition;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.IntStream;
 
 /**
  * Domain service that generates example values based on OpenAPI property types and formats.
- * Contains the core business logic for example generation.
+ * Contains the core business logic, for example, generation.
  */
 public class ExampleGenerationDomainService {
 
@@ -56,66 +60,51 @@ public class ExampleGenerationDomainService {
       List.of("Main St", "Oak Ave", "Maple Dr", "Cedar Ln", "Pine Rd", "Elm Blvd");
 
   public GeneratedExample generateExamples(SchemaDefinition schema, int count) {
-    List<String> examples = new ArrayList<>();
-    for (int i = 0; i < count; i++) {
-      String json = generateExampleJson(schema, i);
-      examples.add(json);
-    }
-    return new GeneratedExample(schema.getName(), examples);
+    List<String> examples =
+        IntStream.range(0, count).mapToObj(i -> generateExampleJson(schema, i)).toList();
+    return new GeneratedExample(schema.name(), examples);
   }
 
   private String generateExampleJson(SchemaDefinition schema, int index) {
-    if (schema.isArrayType()) {
-      StringBuilder sb = new StringBuilder("[\n");
-      sb.append("  ").append(generateObjectJson(schema.getProperties(), index, 1));
-      sb.append("\n]");
-      return sb.toString();
-    }
-    return generateObjectJson(schema.getProperties(), index, 0);
+    return schema.isArrayType()
+        ? "[\n  " + generateObjectJson(schema.properties(), index, 1) + "\n]"
+        : generateObjectJson(schema.properties(), index, 0);
   }
 
   private String generateObjectJson(List<PropertyDefinition> properties, int index, int depth) {
-    if (properties.isEmpty()) {
-      return "{}";
-    }
+    if (properties.isEmpty()) return "{}";
     StringBuilder sb = new StringBuilder("{\n");
     String indent = "  ".repeat(depth + 1);
     String closingIndent = "  ".repeat(depth);
 
-    for (int i = 0; i < properties.size(); i++) {
-      PropertyDefinition prop = properties.get(i);
-      sb.append(indent).append('"').append(prop.getName()).append("\": ");
-      sb.append(generatePropertyValue(prop, index, depth));
-      if (i < properties.size() - 1) {
-        sb.append(',');
-      }
-      sb.append('\n');
-    }
+    IntStream.range(0, properties.size())
+        .forEach(
+            i -> {
+              PropertyDefinition prop = properties.get(i);
+              sb.append(indent).append('"').append(prop.name()).append("\": ");
+              sb.append(generatePropertyValue(prop, index, depth));
+              if (i < properties.size() - 1) sb.append(',');
+              sb.append('\n');
+            });
     sb.append(closingIndent).append('}');
     return sb.toString();
   }
 
-  private String generatePropertyValue(PropertyDefinition prop, int index, int depth) {
-    if (prop.getExampleValue() != null) {
-      Object example = prop.getExampleValue();
-      if (example instanceof String s) {
-        return '"' + escapeJson(s) + '"';
-      }
-      return String.valueOf(example);
-    }
+  String generatePropertyValue(PropertyDefinition prop, int index, int depth) {
+    if (prop.exampleValue() != null)
+      return prop.exampleValue() instanceof String s
+          ? '"' + escapeJson(s) + '"'
+          : String.valueOf(prop.exampleValue());
+    if (!prop.enumValues().isEmpty())
+      return '"' + escapeJson(prop.enumValues().get(index % prop.enumValues().size())) + '"';
 
-    if (!prop.getEnumValues().isEmpty()) {
-      String enumVal = prop.getEnumValues().get(index % prop.getEnumValues().size());
-      return '"' + escapeJson(enumVal) + '"';
-    }
-
-    String type = prop.getType() != null ? prop.getType().toLowerCase() : "string";
-    String format = prop.getFormat() != null ? prop.getFormat().toLowerCase() : "";
-    String name = prop.getName() != null ? prop.getName().toLowerCase() : "";
+    String type = prop.type() != null ? prop.type().toLowerCase() : "string";
+    String format = prop.format() != null ? prop.format().toLowerCase() : "";
+    String name = prop.name() != null ? prop.name().toLowerCase() : "";
 
     return switch (type) {
       case "integer", "int" -> generateIntegerValue(name, format, index);
-      case "number", "float", "double" -> generateNumberValue(name, format, index);
+      case "number", "float", "double" -> generateNumberValue(name, index);
       case "boolean", "bool" -> String.valueOf(index % 2 == 0);
       case "array" -> generateArrayValue(prop, index, depth);
       case "object" -> generateNestedObjectValue(prop, index, depth);
@@ -144,125 +133,132 @@ public class ExampleGenerationDomainService {
   }
 
   private String generateStringByName(String name, int index) {
-    if (name.contains("email") || name.contains("mail")) {
-      String first = FIRST_NAMES.get(index % FIRST_NAMES.size()).toLowerCase();
-      return '"' + first + (index + 1) + "@" + DOMAINS.get(index % DOMAINS.size()) + '"';
-    } else if (name.contains("firstname")
-        || (name.contains("first") && name.contains("name"))
-        || name.contains("givenname")) {
-      return '"' + FIRST_NAMES.get(index % FIRST_NAMES.size()) + '"';
-    } else if (name.contains("lastname")
-        || name.contains("familyname")
-        || name.contains("surname")
-        || (name.contains("last") && name.contains("name"))) {
-      return '"' + LAST_NAMES.get(index % LAST_NAMES.size()) + '"';
-    } else if (name.equals("name") || name.endsWith("name")) {
-      return '"'
-          + FIRST_NAMES.get(index % FIRST_NAMES.size())
-          + " "
-          + LAST_NAMES.get(index % LAST_NAMES.size())
-          + '"';
-    } else if (name.contains("phone") || name.contains("tel")) {
-      return '"'
-          + "+1-555-"
-          + String.format("%03d", index + 100)
-          + "-"
-          + String.format("%04d", index * 7 + 1000)
-          + '"';
-    } else if (name.contains("city")) {
-      return '"' + CITIES.get(index % CITIES.size()) + '"';
-    } else if (name.contains("country")) {
-      return '"' + COUNTRIES.get(index % COUNTRIES.size()) + '"';
-    } else if (name.contains("street") || name.contains("address")) {
-      return '"' + (index * 10 + 1) + " " + STREETS.get(index % STREETS.size()) + '"';
-    } else if (name.contains("zip") || name.contains("postal")) {
-      return '"' + String.format("%05d", (index + 1) * 10001) + '"';
-    } else if (name.contains("url") || name.contains("link") || name.contains("href")) {
-      return '"' + "https://example.com/" + name + "/" + (index + 1) + '"';
-    } else if (name.contains("description")
-        || name.contains("text")
-        || name.contains("content")
-        || name.contains("body")) {
-      return '"'
-          + "Sample "
-          + name
-          + " "
-          + (index + 1)
-          + " - This is a generated example value."
-          + '"';
-    } else if (name.contains("title") || name.contains("subject") || name.contains("label")) {
-      return '"' + "Example " + capitalize(name) + " " + (index + 1) + '"';
-    } else if (name.contains("status") || name.contains("state")) {
-      String[] statuses = {"active", "inactive", "pending", "completed", "cancelled"};
-      return '"' + statuses[index % statuses.length] + '"';
-    } else if (name.contains("type") || name.contains("category") || name.contains("kind")) {
-      String[] types = {"type_a", "type_b", "type_c", "category_1", "category_2"};
-      return '"' + types[index % types.length] + '"';
-    } else if (name.contains("code") || name.contains("key")) {
-      return '"' + name.toUpperCase() + "_" + String.format("%04d", index + 1) + '"';
-    } else if (name.contains("color") || name.contains("colour")) {
-      String[] colors = {"#FF5733", "#33FF57", "#3357FF", "#FF33F5", "#F5FF33"};
-      return '"' + colors[index % colors.length] + '"';
-    } else if (name.contains("version")) {
-      return '"' + (index + 1) + "." + (index % 10) + "." + (index % 5) + '"';
-    } else if (name.endsWith("id") || name.equals("id")) {
-      return '"' + generateUUID(index) + '"';
-    } else {
-      return '"' + capitalize(name) + "_example_" + (index + 1) + '"';
-    }
+    return switch (name) {
+      case String n when n.contains("email") || n.contains("mail") -> {
+        String first = FIRST_NAMES.get(index % FIRST_NAMES.size()).toLowerCase();
+        yield '"' + first + (index + 1) + "@" + DOMAINS.get(index % DOMAINS.size()) + '"';
+      }
+      case String n
+          when n.contains("firstname")
+              || (n.contains("first") && n.contains("name"))
+              || n.contains("givenname") ->
+          '"' + FIRST_NAMES.get(index % FIRST_NAMES.size()) + '"';
+      case String n
+          when n.contains("lastname")
+              || n.contains("familyname")
+              || n.contains("surname")
+              || (n.contains("last") && n.contains("name")) ->
+          '"' + LAST_NAMES.get(index % LAST_NAMES.size()) + '"';
+      case String n when n.endsWith("name") ->
+          '"'
+              + FIRST_NAMES.get(index % FIRST_NAMES.size())
+              + " "
+              + LAST_NAMES.get(index % LAST_NAMES.size())
+              + '"';
+      case String n when n.contains("phone") || n.contains("tel") ->
+          '"'
+              + "+1-555-"
+              + String.format("%03d", index + 100)
+              + "-"
+              + String.format("%04d", index * 7 + 1000)
+              + '"';
+      case String n when n.contains("city") -> '"' + CITIES.get(index % CITIES.size()) + '"';
+      case String n when n.contains("country") ->
+          '"' + COUNTRIES.get(index % COUNTRIES.size()) + '"';
+      case String n when n.contains("street") || n.contains("address") ->
+          '"' + (index * 10 + 1) + " " + STREETS.get(index % STREETS.size()) + '"';
+      case String n when n.contains("zip") || n.contains("postal") ->
+          '"' + String.format("%05d", (index + 1) * 10001) + '"';
+      case String n when n.contains("url") || n.contains("link") || n.contains("href") ->
+          '"' + "https://example.com/" + name + "/" + (index + 1) + '"';
+      case String n
+          when n.contains("description")
+              || n.contains("text")
+              || n.contains("content")
+              || n.contains("body") ->
+          '"'
+              + "Sample "
+              + name
+              + " "
+              + (index + 1)
+              + " - This is a generated example value."
+              + '"';
+      case String n when n.contains("title") || n.contains("subject") || n.contains("label") ->
+          '"' + "Example " + capitalize(name) + " " + (index + 1) + '"';
+      case String n when n.contains("status") || n.contains("state") -> {
+        String[] statuses = {"active", "inactive", "pending", "completed", "cancelled"};
+        yield '"' + statuses[index % statuses.length] + '"';
+      }
+      case String n when n.contains("type") || n.contains("category") || n.contains("kind") -> {
+        String[] types = {"type_a", "type_b", "type_c", "category_1", "category_2"};
+        yield '"' + types[index % types.length] + '"';
+      }
+      case String n when n.contains("code") || n.contains("key") ->
+          '"' + name.toUpperCase() + "_" + String.format("%04d", index + 1) + '"';
+      case String n when n.contains("color") || n.contains("colour") -> {
+        String[] colors = {"#FF5733", "#33FF57", "#3357FF", "#FF33F5", "#F5FF33"};
+        yield '"' + colors[index % colors.length] + '"';
+      }
+      case String n when n.contains("version") ->
+          '"' + (index + 1) + "." + (index % 10) + "." + (index % 5) + '"';
+      case String n when n.endsWith("id") -> '"' + generateUUID(index) + '"';
+      default -> '"' + capitalize(name) + "_example_" + (index + 1) + '"';
+    };
   }
 
   private String generateIntegerValue(String name, String format, int index) {
-    if (name.contains("age")) {
-      return String.valueOf(18 + index % 62);
-    } else if (name.contains("year")) {
-      return String.valueOf(2020 + index % 10);
-    } else if (name.contains("count") || name.contains("total") || name.contains("quantity")) {
-      return String.valueOf((index + 1) * 5);
-    } else if (name.contains("price") || name.contains("amount") || name.contains("cost")) {
-      return String.valueOf((index + 1) * 100);
-    } else if (name.contains("id")) {
-      return String.valueOf(index + 1);
-    } else if ("int64".equals(format)) {
-      return String.valueOf((long) (index + 1) * 1000000L);
-    } else {
-      return String.valueOf((index + 1) * 10);
-    }
+    return switch (name) {
+      case String n when n.contains("age") -> String.valueOf(18 + index % 62);
+      case String n when n.contains("year") -> String.valueOf(2020 + index % 10);
+      case String n when n.contains("count") || n.contains("total") || n.contains("quantity") ->
+          String.valueOf((index + 1) * 5);
+      case String n when n.contains("price") || n.contains("amount") || n.contains("cost") ->
+          String.valueOf((index + 1) * 100);
+      case String n when n.contains("id") -> String.valueOf(index + 1);
+      default ->
+          "int64".equals(format)
+              ? String.valueOf((index + 1) * 1000000L)
+              : String.valueOf((index + 1) * 10);
+    };
   }
 
-  private String generateNumberValue(String name, String format, int index) {
-    if (name.contains("price") || name.contains("amount") || name.contains("cost")) {
-      return String.format("%.2f", (index + 1) * 9.99);
-    } else if (name.contains("lat") || name.contains("latitude")) {
-      return String.format("%.6f", -90.0 + (index * 11.37) % 180.0);
-    } else if (name.contains("lon") || name.contains("longitude") || name.contains("lng")) {
-      return String.format("%.6f", -180.0 + (index * 22.73) % 360.0);
-    } else if (name.contains("percent") || name.contains("rate") || name.contains("ratio")) {
-      return String.format("%.2f", (index % 100) * 1.0);
-    } else {
-      return String.format("%.2f", (index + 1) * 3.14);
-    }
+  private String generateNumberValue(String name, int index) {
+    return switch (name) {
+      case String n when n.contains("price") || n.contains("amount") || n.contains("cost") ->
+          String.format("%.2f", (index + 1) * 9.99);
+      case String n when n.contains("lat") || n.contains("latitude") ->
+          String.format("%.6f", -90.0 + (index * 11.37) % 180.0);
+      case String n when n.contains("lon") || n.contains("longitude") || n.contains("lng") ->
+          String.format("%.6f", -180.0 + (index * 22.73) % 360.0);
+      case String n when n.contains("percent") || n.contains("rate") || n.contains("ratio") ->
+          String.format("%.2f", (index % 100) * 1.0);
+      default -> String.format("%.2f", (index + 1) * 3.14);
+    };
   }
 
   private String generateArrayValue(PropertyDefinition prop, int index, int depth) {
-    if (depth > 3) return "[]";
-    if (prop.getItems() == null) {
+    if (depth > 3) {
+      return "[]";
+    }
+    if (prop.items() == null) {
       return "[\"item_" + (index + 1) + "\"]";
     }
-    StringBuilder sb = new StringBuilder("[\n");
-    String indent = "  ".repeat(depth + 1);
-    sb.append(indent).append(generatePropertyValue(prop.getItems(), index, depth + 1));
-    sb.append('\n').append("  ".repeat(depth)).append(']');
-    return sb.toString();
+
+    String indentNext = "  ".repeat(depth + 1);
+    String indentCurrent = "  ".repeat(depth);
+    String itemValue = generatePropertyValue(prop.items(), index, depth + 1);
+    return "[\n" + indentNext + itemValue + '\n' + indentCurrent + ']';
   }
 
   private String generateNestedObjectValue(PropertyDefinition prop, int index, int depth) {
-    if (depth > 3) return "{}";
-    if (prop.getNestedProperties().isEmpty()) {
+    if (depth > 3) {
       return "{}";
     }
-    List<PropertyDefinition> nestedProps = new ArrayList<>(prop.getNestedProperties().values());
-    return generateObjectJson(nestedProps, index, depth + 1);
+    if (prop.nestedProperties().isEmpty()) {
+      return "{}";
+    }
+
+    return generateObjectJson(new ArrayList<>(prop.nestedProperties().values()), index, depth + 1);
   }
 
   private String generateUUID(int index) {
@@ -272,17 +268,17 @@ public class ExampleGenerationDomainService {
   }
 
   private String escapeJson(String value) {
-    if (value == null) return "";
-    return value
-        .replace("\\", "\\\\")
-        .replace("\"", "\\\"")
-        .replace("\n", "\\n")
-        .replace("\r", "\\r")
-        .replace("\t", "\\t");
+    return value == null
+        ? ""
+        : value
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t");
   }
 
   private String capitalize(String s) {
-    if (s == null || s.isEmpty()) return s;
-    return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    return s == null || s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1);
   }
 }

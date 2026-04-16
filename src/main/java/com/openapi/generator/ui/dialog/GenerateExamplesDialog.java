@@ -7,6 +7,7 @@
 
 package com.openapi.generator.ui.dialog;
 
+import com.intellij.icons.AllIcons;
 import com.intellij.notification.NotificationGroupManager;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
@@ -18,15 +19,17 @@ import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.ui.JBColor;
+import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBScrollPane;
-import com.intellij.ui.components.JBSpinner;
 import com.intellij.ui.table.JBTable;
 import com.intellij.util.ui.JBUI;
 import com.openapi.generator.application.service.ExampleGenerationApplicationService;
 import com.openapi.generator.domain.model.ExampleGenerationRequest;
 import com.openapi.generator.domain.model.GeneratedExample;
 import com.openapi.generator.domain.model.SchemaDefinition;
+import com.openapi.generator.domain.service.ExampleGenerationDomainService;
+import com.openapi.generator.infrastructure.openapi.OpenApiSpecificationParser;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -34,14 +37,30 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.io.IOException;
+import java.io.Serial;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
-import javax.swing.*;
+import javax.swing.Action;
+import javax.swing.BorderFactory;
+import javax.swing.DefaultCellEditor;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.JSpinner;
+import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumn;
 import org.jetbrains.annotations.NotNull;
@@ -51,36 +70,77 @@ import org.jetbrains.annotations.Nullable;
  * Main dialog for the OpenAPI Example Generator plugin. Provides a modern, intuitive UI for
  * selecting schemas and generating examples.
  */
+@SuppressWarnings("this-escape")
 public class GenerateExamplesDialog extends DialogWrapper {
 
   private final Project project;
   private final ExampleGenerationApplicationService applicationService;
   private final SchemaCountTableModel tableModel;
-
   private TextFieldWithBrowseButton specFileField;
   private TextFieldWithBrowseButton outputDirField;
-  private JBTable schemaTable;
   private JBLabel totalCountLabel;
   private JBLabel statusLabel;
   private JSpinner globalCountSpinner;
   private JButton parseButton;
-  private JButton applyGlobalButton;
-
+  private JBCheckBox combineCheckbox;
   private List<SchemaDefinition> loadedSchemas;
+  private boolean generationCompleted;
+  private String autoParsePath;
 
   public GenerateExamplesDialog(@Nullable Project project) {
     super(project, true);
     this.project = project;
-    this.applicationService = new ExampleGenerationApplicationService();
+    this.applicationService =
+        new ExampleGenerationApplicationService(
+            new OpenApiSpecificationParser(), new ExampleGenerationDomainService());
     this.tableModel = new SchemaCountTableModel();
     setTitle("OpenAPI Example Generator");
     setSize(800, 600);
     init();
   }
 
+  private static void addAutoCommitOnType(JSpinner spinner, JTextField textField) {
+    textField
+        .getDocument()
+        .addDocumentListener(
+            new DocumentListener() {
+              @Override
+              public void insertUpdate(DocumentEvent e) {
+                commitSpinnerEdit(spinner);
+              }
+
+              @Override
+              public void removeUpdate(DocumentEvent e) {
+                commitSpinnerEdit(spinner);
+              }
+
+              @Override
+              public void changedUpdate(DocumentEvent e) {
+                commitSpinnerEdit(spinner);
+              }
+            });
+  }
+
+  private static void commitSpinnerEdit(JSpinner spinner) {
+    SwingUtilities.invokeLater(
+        () -> {
+          try {
+            spinner.commitEdit();
+          } catch (ParseException ignored) {
+          }
+        });
+  }
+
   public void setSpecFilePath(String path) {
-    if (specFileField != null) {
-      specFileField.setText(path);
+    this.autoParsePath = path;
+    if (specFileField != null) specFileField.setText(path);
+  }
+
+  @Override
+  public void show() {
+    super.show();
+    if (autoParsePath != null && !autoParsePath.isEmpty()) {
+      SwingUtilities.invokeLater(() -> onParseSpec(null));
     }
   }
 
@@ -96,6 +156,7 @@ public class GenerateExamplesDialog extends DialogWrapper {
     return mainPanel;
   }
 
+  @SuppressWarnings("removal")
   private JPanel createTopPanel() {
     JPanel panel = new JPanel(new GridBagLayout());
     panel.setBorder(
@@ -108,13 +169,13 @@ public class GenerateExamplesDialog extends DialogWrapper {
             JBColor.foreground()));
 
     GridBagConstraints gbc = new GridBagConstraints();
-    gbc.insets = JBUI.insets(4, 8, 4, 8);
+    gbc.insets = JBUI.insets(4, 8);
     gbc.fill = GridBagConstraints.HORIZONTAL;
 
     gbc.gridx = 0;
     gbc.gridy = 0;
     gbc.weightx = 0;
-    panel.add(new JBLabel("Spec File:"), gbc);
+    panel.add(new JBLabel("Spec file:"), gbc);
 
     specFileField = new TextFieldWithBrowseButton();
     specFileField.addBrowseFolderListener(
@@ -134,7 +195,7 @@ public class GenerateExamplesDialog extends DialogWrapper {
     panel.add(specFileField, gbc);
 
     parseButton = new JButton("Parse Spec");
-    parseButton.setIcon(com.intellij.icons.AllIcons.Actions.Find);
+    parseButton.setIcon(AllIcons.Actions.Find);
     parseButton.addActionListener(this::onParseSpec);
     gbc.gridx = 2;
     gbc.weightx = 0;
@@ -143,12 +204,11 @@ public class GenerateExamplesDialog extends DialogWrapper {
     gbc.gridx = 0;
     gbc.gridy = 1;
     gbc.weightx = 0;
-    panel.add(new JBLabel("Output Dir:"), gbc);
+    panel.add(new JBLabel("Output dir:"), gbc);
 
     outputDirField = new TextFieldWithBrowseButton();
-    if (project != null && project.getBasePath() != null) {
+    if (project != null && project.getBasePath() != null)
       outputDirField.setText(project.getBasePath() + "/openapi-examples");
-    }
     outputDirField.addBrowseFolderListener(
         "Select Output Directory",
         "Choose where to save the generated example files",
@@ -168,6 +228,8 @@ public class GenerateExamplesDialog extends DialogWrapper {
   }
 
   private JPanel createTablePanel() {
+    JBTable schemaTable;
+    JButton applyGlobalButton;
     JPanel panel = new JPanel(new BorderLayout(0, JBUI.scale(4)));
     panel.setBorder(
         BorderFactory.createTitledBorder(
@@ -181,7 +243,22 @@ public class GenerateExamplesDialog extends DialogWrapper {
     JPanel globalPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, JBUI.scale(8), JBUI.scale(4)));
 
     globalPanel.add(new JBLabel("Set all counts to:"));
-    globalCountSpinner = new JBSpinner(new SpinnerNumberModel(1, 0, 100, 1));
+    globalCountSpinner = new JSpinner(new SpinnerNumberModel(1, 0, 9999, 1));
+    JSpinner.NumberEditor globalSpinnerEditor = new JSpinner.NumberEditor(globalCountSpinner, "#");
+    globalCountSpinner.setEditor(globalSpinnerEditor);
+    addAutoCommitOnType(globalCountSpinner, globalSpinnerEditor.getTextField());
+    globalSpinnerEditor
+        .getTextField()
+        .addFocusListener(
+            new FocusAdapter() {
+              @Override
+              public void focusLost(FocusEvent e) {
+                try {
+                  globalCountSpinner.commitEdit();
+                } catch (ParseException ignored) {
+                }
+              }
+            });
     globalCountSpinner.setPreferredSize(
         new Dimension(JBUI.scale(80), globalCountSpinner.getPreferredSize().height));
     globalPanel.add(globalCountSpinner);
@@ -193,7 +270,7 @@ public class GenerateExamplesDialog extends DialogWrapper {
     totalCountLabel = new JBLabel("Total examples: 0");
     totalCountLabel.setFont(totalCountLabel.getFont().deriveFont(Font.BOLD));
     totalCountLabel.setForeground(JBColor.namedColor("Button.foreground", JBColor.foreground()));
-    totalCountLabel.setBorder(JBUI.Borders.empty(0, JBUI.scale(16), 0, 0));
+    totalCountLabel.setBorder(JBUI.Borders.emptyLeft(JBUI.scale(16)));
     globalPanel.add(totalCountLabel);
 
     panel.add(globalPanel, BorderLayout.NORTH);
@@ -211,12 +288,12 @@ public class GenerateExamplesDialog extends DialogWrapper {
     setColumnWidth(schemaTable.getColumnModel().getColumn(3), JBUI.scale(90), JBUI.scale(90));
 
     DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-    centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+    centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
     schemaTable.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
     schemaTable.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
 
     TableColumn examplesColumn = schemaTable.getColumnModel().getColumn(3);
-    examplesColumn.setCellEditor(new SpinnerCellEditor(0, 100));
+    examplesColumn.setCellEditor(new SpinnerCellEditor(0, 9999));
 
     tableModel.addTableModelListener(e -> updateTotalCount());
 
@@ -231,11 +308,15 @@ public class GenerateExamplesDialog extends DialogWrapper {
     JPanel panel = new JPanel(new BorderLayout());
 
     JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-    infoPanel.add(new JBLabel(com.intellij.icons.AllIcons.General.Information));
+    infoPanel.add(new JBLabel(AllIcons.General.Information));
     infoPanel.add(
         new JBLabel("Generated files will be saved to the output directory as JSON files."));
 
     panel.add(infoPanel, BorderLayout.WEST);
+
+    combineCheckbox = new JBCheckBox("Combine into single JSON");
+    panel.add(combineCheckbox, BorderLayout.EAST);
+
     return panel;
   }
 
@@ -259,7 +340,7 @@ public class GenerateExamplesDialog extends DialogWrapper {
 
     ProgressManager.getInstance()
         .run(
-            new Task.Backgroundable(project, "Parsing OpenAPI Specification", false) {
+            new Task.Backgroundable(project, "Parsing OpenAPI specification", false) {
               @Override
               public void run(@NotNull ProgressIndicator indicator) {
                 indicator.setIndeterminate(true);
@@ -269,8 +350,8 @@ public class GenerateExamplesDialog extends DialogWrapper {
                   SwingUtilities.invokeLater(
                       () -> {
                         loadedSchemas = schemas;
-                        int defaultCount = (Integer) globalCountSpinner.getValue();
-                        tableModel.setSchemas(schemas, defaultCount);
+                        tableModel.setSchemas(
+                            schemas, ((Number) globalCountSpinner.getValue()).intValue());
                         updateTotalCount();
                         statusLabel.setText("Found " + schemas.size() + " schema(s).");
                         statusLabel.setForeground(JBColor.GREEN);
@@ -293,7 +374,7 @@ public class GenerateExamplesDialog extends DialogWrapper {
   }
 
   private void applyGlobalCount() {
-    int count = (Integer) globalCountSpinner.getValue();
+    int count = ((Number) globalCountSpinner.getValue()).intValue();
     tableModel.setAllCounts(count);
     updateTotalCount();
   }
@@ -305,93 +386,167 @@ public class GenerateExamplesDialog extends DialogWrapper {
 
   @Override
   protected void doOKAction() {
-    if (loadedSchemas == null || loadedSchemas.isEmpty()) {
-      Messages.showWarningDialog(
-          project, "Please parse an OpenAPI specification file first.", "No Schemas Loaded");
+    if (generationCompleted) {
+      super.doOKAction();
       return;
     }
 
-    Map<String, Integer> counts = tableModel.getSchemaCountMap();
-    int total = tableModel.getTotalCount();
-    if (total == 0) {
+    if (!validateInput()) {
+      return;
+    }
+
+    executeGeneration();
+  }
+
+  private boolean validateInput() {
+    if (loadedSchemas == null || loadedSchemas.isEmpty()) {
+      Messages.showWarningDialog(
+          project, "Please parse an OpenAPI specification file first.", "No Schemas Loaded");
+      return false;
+    }
+
+    if (tableModel.getTotalCount() == 0) {
       Messages.showWarningDialog(
           project,
           "Please set at least 1 example for at least one schema.",
           "No Examples Requested");
-      return;
+      return false;
     }
 
     String outputDir = outputDirField.getText().trim();
     if (outputDir.isEmpty()) {
       Messages.showWarningDialog(
           project, "Please specify an output directory.", "No Output Directory");
-      return;
+      return false;
     }
 
-    ExampleGenerationRequest request =
-        new ExampleGenerationRequest(specFileField.getText().trim(), counts, outputDir);
+    return true;
+  }
 
+  private void executeGeneration() {
     getOKAction().setEnabled(false);
+
+    ExampleGenerationRequest request = buildGenerationRequest();
 
     ProgressManager.getInstance()
         .run(
-            new Task.Backgroundable(project, "Generating OpenAPI Examples", false) {
+            new Task.Backgroundable(project, "Generating OpenAPI examples", false) {
               @Override
               public void run(@NotNull ProgressIndicator indicator) {
-                indicator.setIndeterminate(false);
-                indicator.setText("Generating examples...");
-                try {
-                  List<GeneratedExample> results = applicationService.generateExamples(request);
-                  Path outputPath = Paths.get(outputDir);
-                  Files.createDirectories(outputPath);
-
-                  int count = 0;
-                  for (GeneratedExample result : results) {
-                    indicator.setText("Writing " + result.getSchemaName() + "...");
-                    indicator.setFraction((double) count / results.size());
-                    writeExamplesToFile(outputPath, result);
-                    count++;
-                  }
-
-                  int totalWritten = results.stream().mapToInt(GeneratedExample::getCount).sum();
-                  SwingUtilities.invokeLater(
-                      () -> {
-                        notifySuccess(totalWritten, outputDir);
-                        GenerateExamplesDialog.super.doOKAction();
-                      });
-                } catch (Exception ex) {
-                  SwingUtilities.invokeLater(
-                      () -> {
-                        Messages.showErrorDialog(
-                            project,
-                            "Failed to generate examples:\n" + ex.getMessage(),
-                            "Generation Error");
-                        getOKAction().setEnabled(true);
-                      });
-                }
+                performGeneration(indicator, request);
               }
             });
   }
 
-  private void writeExamplesToFile(Path outputDir, GeneratedExample result) throws IOException {
-    String fileName = result.getSchemaName() + "-examples.json";
-    Path filePath = outputDir.resolve(fileName);
+  private ExampleGenerationRequest buildGenerationRequest() {
+    Map<String, Integer> counts = tableModel.getSchemaCountMap();
+    String outputDir = outputDirField.getText().trim();
+    boolean combine = combineCheckbox.isSelected();
 
-    StringBuilder content = new StringBuilder("[\n");
-    List<String> examples = result.getExampleJsonStrings();
-    for (int i = 0; i < examples.size(); i++) {
-      String[] lines = examples.get(i).split("\n");
-      for (String line : lines) {
-        content.append("  ").append(line).append('\n');
-      }
-      if (i < examples.size() - 1) {
-        content.setLength(content.length() - 1);
-        content.append(",\n");
-      }
+    return new ExampleGenerationRequest(specFileField.getText().trim(), counts, outputDir, combine);
+  }
+
+  private void performGeneration(ProgressIndicator indicator, ExampleGenerationRequest request) {
+    indicator.setIndeterminate(false);
+    indicator.setText("Generating examples...");
+
+    try {
+      List<GeneratedExample> results = applicationService.generateExamples(request);
+      Path outputPath = Paths.get(request.outputDirectory());
+      Files.createDirectories(outputPath);
+
+      writeResults(indicator, outputPath, results, request.combineOutput());
+
+      int totalWritten = results.stream().mapToInt(GeneratedExample::getCount).sum();
+      handleGenerationSuccess(totalWritten, request.outputDirectory());
+    } catch (Exception ex) {
+      handleGenerationError(ex);
     }
-    content.append("]");
+  }
 
-    Files.writeString(filePath, content.toString(), StandardCharsets.UTF_8);
+  private void writeResults(
+      ProgressIndicator indicator, Path outputPath, List<GeneratedExample> results, boolean combine)
+      throws IOException {
+    if (combine) {
+      indicator.setText("Writing combined file...");
+      writeCombinedFile(outputPath, results);
+    } else {
+      writeIndividualFiles(indicator, outputPath, results);
+    }
+  }
+
+  private void writeIndividualFiles(
+      ProgressIndicator indicator, Path outputPath, List<GeneratedExample> results) {
+    results.forEach(
+        result -> {
+          indicator.setText("Writing " + result.schemaName() + "...");
+          indicator.setFraction((double) results.indexOf(result) / results.size());
+          try {
+            writeExamplesToFile(outputPath, result);
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        });
+  }
+
+  private void handleGenerationSuccess(int totalWritten, String outputDir) {
+    SwingUtilities.invokeLater(
+        () -> {
+          notifySuccess(totalWritten, outputDir);
+          generationCompleted = true;
+          getOKAction().putValue(Action.NAME, "Done");
+          getOKAction().setEnabled(true);
+        });
+  }
+
+  private void handleGenerationError(Exception ex) {
+    SwingUtilities.invokeLater(
+        () -> {
+          Messages.showErrorDialog(
+              project, "Failed to generate examples:\n" + ex.getMessage(), "Generation Error");
+          getOKAction().setEnabled(true);
+        });
+  }
+
+  private void writeExamplesToFile(Path outputDir, GeneratedExample result) throws IOException {
+    Path filePath = outputDir.resolve(result.schemaName() + "-examples.json");
+    List<String> examples = result.exampleJsonStrings();
+
+    String content =
+        examples.stream()
+            .map(
+                example ->
+                    example
+                        .lines()
+                        .map(line -> "  " + line)
+                        .collect(java.util.stream.Collectors.joining("\n")))
+            .collect(java.util.stream.Collectors.joining(",\n", "[\n", "\n]"));
+
+    Files.writeString(filePath, content, StandardCharsets.UTF_8);
+  }
+
+  private void writeCombinedFile(Path outputDir, List<GeneratedExample> results)
+      throws IOException {
+    Path filePath = outputDir.resolve("all-examples.json");
+
+    String content =
+        results.stream()
+            .map(
+                result -> {
+                  String examplesContent =
+                      result.exampleJsonStrings().stream()
+                          .map(
+                              example ->
+                                  example
+                                      .lines()
+                                      .map(line -> "    " + line)
+                                      .collect(java.util.stream.Collectors.joining("\n")))
+                          .collect(java.util.stream.Collectors.joining(",\n"));
+                  return "  \"" + result.schemaName() + "\": [\n" + examplesContent + "\n  ]";
+                })
+            .collect(java.util.stream.Collectors.joining(",\n", "{\n", "\n}"));
+
+    Files.writeString(filePath, content, StandardCharsets.UTF_8);
   }
 
   private void notifySuccess(int totalExamples, String outputDir) {
@@ -399,7 +554,7 @@ public class GenerateExamplesDialog extends DialogWrapper {
       NotificationGroupManager.getInstance()
           .getNotificationGroup("OpenAPI Generator")
           .createNotification(
-              "Examples Generated Successfully",
+              "Examples generated successfully",
               "Generated " + totalExamples + " example(s) in " + outputDir,
               NotificationType.INFORMATION)
           .notify(project);
@@ -422,6 +577,7 @@ public class GenerateExamplesDialog extends DialogWrapper {
   }
 
   private static class SpinnerCellEditor extends DefaultCellEditor {
+    @Serial private static final long serialVersionUID = 1L;
     private final JSpinner spinner;
     private final SpinnerNumberModel spinnerModel;
 
@@ -432,19 +588,47 @@ public class GenerateExamplesDialog extends DialogWrapper {
       JSpinner.NumberEditor editor = new JSpinner.NumberEditor(spinner, "#");
       spinner.setEditor(editor);
 
+      addAutoCommitOnType(spinner, editor.getTextField());
+
+      editor
+          .getTextField()
+          .addFocusListener(
+              new FocusAdapter() {
+                @Override
+                public void focusLost(FocusEvent e) {
+                  try {
+                    spinner.commitEdit();
+                  } catch (ParseException ignored) {
+                  }
+                  stopCellEditing();
+                }
+              });
+
+      spinner.addChangeListener(e -> stopCellEditing());
+
       editorComponent = spinner;
+      clickCountToStart = 1;
       delegate =
           new EditorDelegate() {
             @Override
             public void setValue(Object value) {
-              spinnerModel.setValue(value instanceof Integer ? value : 1);
+              spinnerModel.setValue(value instanceof Number n ? n.intValue() : 1);
             }
 
             @Override
             public Object getCellEditorValue() {
-              return spinnerModel.getValue();
+              return ((Number) spinnerModel.getValue()).intValue();
             }
           };
+    }
+
+    @Override
+    public boolean stopCellEditing() {
+      try {
+        spinner.commitEdit();
+      } catch (ParseException ignored) {
+      }
+      return super.stopCellEditing();
     }
   }
 }

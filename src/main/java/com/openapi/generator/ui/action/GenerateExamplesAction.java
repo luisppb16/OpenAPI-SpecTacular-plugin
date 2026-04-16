@@ -15,36 +15,28 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.openapi.generator.ui.dialog.GenerateExamplesDialog;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * IntelliJ action that opens the Generate Examples dialog. Available from the Tools menu and from
- * the right-click context menu on OpenAPI files.
- */
+/** IntelliJ action that triggers the OpenAPI Example Generator dialog from the editor or project view context menu. */
 public class GenerateExamplesAction extends AnAction {
 
   @Override
   public void actionPerformed(@NotNull AnActionEvent e) {
     Project project = e.getProject();
     GenerateExamplesDialog dialog = new GenerateExamplesDialog(project);
-
-    VirtualFile virtualFile = e.getData(CommonDataKeys.VIRTUAL_FILE);
-    if (virtualFile != null && isOpenApiFile(virtualFile)) {
-      dialog.setSpecFilePath(virtualFile.getPath());
+    VirtualFile vf = e.getData(CommonDataKeys.VIRTUAL_FILE);
+    if (vf != null && isOpenApiFile(vf)) {
+      dialog.setSpecFilePath(vf.getPath());
     }
-
     dialog.show();
   }
 
   @Override
   public void update(@NotNull AnActionEvent e) {
     e.getPresentation().setEnabled(true);
-    VirtualFile virtualFile = e.getData(CommonDataKeys.VIRTUAL_FILE);
-    if (virtualFile != null) {
-      boolean isOpenApi = isOpenApiFile(virtualFile);
-      String place = e.getPlace();
-      if ("ProjectViewPopupMenu".equals(place) || "EditorPopupMenu".equals(place)) {
-        e.getPresentation().setEnabledAndVisible(isOpenApi);
-      }
-    }
+    VirtualFile vf = e.getData(CommonDataKeys.VIRTUAL_FILE);
+    if (vf == null) return;
+    String place = e.getPlace();
+    boolean isContextMenu = "ProjectViewPopupMenu".equals(place) || "EditorPopupMenu".equals(place);
+    e.getPresentation().setEnabledAndVisible(isContextMenu && isOpenApiFile(vf));
   }
 
   private boolean isOpenApiFile(VirtualFile file) {

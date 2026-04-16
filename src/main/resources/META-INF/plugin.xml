@@ -7,8 +7,8 @@
 
 <idea-plugin>
     <id>com.openapi.generator</id>
-    <name>OpenAPI Example Generator</name>
-    <vendor email="support@openapi-generator.com" url="https://github.com/luisppb16/OpenAPI-Generator">OpenAPI Generator</vendor>
+    <name>OpenAPI SpecTacular</name>
+    <vendor email="ironkrozz@gmail.com" url="https://github.com/luisppb16/OpenAPI-Generator">Luis Pepe</vendor>
     <description><![CDATA[
         <p>Generate realistic example objects from your OpenAPI specifications.</p>
         <p>Features:</p>
@@ -34,13 +34,13 @@
             <add-to-group group-id="ToolsMenu" anchor="last"/>
             <action id="com.openapi.generator.GenerateExamplesAction"
                     class="com.openapi.generator.ui.action.GenerateExamplesAction"
-                    text="Generate Examples from OpenAPI Spec..."
+                    text="Generate Examples from OpenAPI Specification"
                     description="Open a dialog to generate example objects from an OpenAPI specification"
                     icon="AllIcons.Actions.GeneratedFolder"/>
         </group>
         <action id="com.openapi.generator.GenerateExamplesAction.EditorContext"
                 class="com.openapi.generator.ui.action.GenerateExamplesAction"
-                text="Generate Examples from OpenAPI Spec..."
+                text="Generate Examples from OpenAPI Specification"
                 description="Generate example objects from this OpenAPI specification"
                 icon="AllIcons.Actions.GeneratedFolder">
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>

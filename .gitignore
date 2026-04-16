@@ -38,3 +38,8 @@ out/
 .DS_Store
 Thumbs.db
 gradlew
+.intellijPlatform/self-update.lock
+.settings/org.eclipse.buildship.core.prefs
+.settings/org.eclipse.jdt.core.prefs
+/bin
+.project

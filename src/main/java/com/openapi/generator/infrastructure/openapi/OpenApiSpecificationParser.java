@@ -11,11 +11,21 @@ import com.openapi.generator.domain.model.PropertyDefinition;
 import com.openapi.generator.domain.model.SchemaDefinition;
 import io.swagger.parser.OpenAPIParser;
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.parser.core.models.ParseOptions;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Stream;
 
 /** Infrastructure service that parses OpenAPI specification files into domain models. */
 public class OpenApiSpecificationParser {
@@ -37,92 +47,88 @@ public class OpenApiSpecificationParser {
     List<SchemaDefinition> schemas = new ArrayList<>();
 
     if (openAPI.getComponents() != null && openAPI.getComponents().getSchemas() != null) {
-      for (Map.Entry<String, Schema> entry : openAPI.getComponents().getSchemas().entrySet()) {
-        SchemaDefinition schemaDef = convertSchema(entry.getKey(), entry.getValue());
-        schemas.add(schemaDef);
-      }
+      openAPI.getComponents().getSchemas().entrySet().stream()
+          .map(entry -> convertSchema(entry.getKey(), entry.getValue()))
+          .forEach(schemas::add);
     }
 
     if (openAPI.getPaths() != null) {
-      openAPI
-          .getPaths()
-          .forEach(
-              (path, pathItem) -> {
-                if (pathItem.readOperationsMap() != null) {
-                  pathItem
-                      .readOperationsMap()
-                      .forEach(
-                          (method, operation) -> {
-                            if (operation.getRequestBody() != null
-                                && operation.getRequestBody().getContent() != null) {
-                              operation
-                                  .getRequestBody()
-                                  .getContent()
-                                  .forEach(
-                                      (mediaType, mediaTypeObj) -> {
-                                        if (mediaTypeObj.getSchema() != null
-                                            && mediaTypeObj.getSchema().getProperties() != null) {
-                                          String schemaName =
-                                              buildSchemaNameFromPath(method.toString(), path);
-                                          if (schemas.stream()
-                                              .noneMatch(s -> s.getName().equals(schemaName))) {
-                                            schemas.add(
-                                                convertSchema(
-                                                    schemaName, mediaTypeObj.getSchema()));
-                                          }
-                                        }
-                                      });
-                            }
-                          });
+      openAPI.getPaths().entrySet().stream()
+          .flatMap(
+              pathEntry -> {
+                PathItem pathItem = pathEntry.getValue();
+                String path = pathEntry.getKey();
+                if (pathItem.readOperationsMap() == null) {
+                  return Stream.empty();
                 }
-              });
+                return pathItem.readOperationsMap().entrySet().stream()
+                    .flatMap(
+                        operationEntry -> {
+                          PathItem.HttpMethod method = operationEntry.getKey();
+                          Operation operation = operationEntry.getValue();
+                          if (operation.getRequestBody() == null
+                              || operation.getRequestBody().getContent() == null) {
+                            return Stream.empty();
+                          }
+                          return operation.getRequestBody().getContent().values().stream()
+                              .filter(
+                                  mediaType ->
+                                      mediaType.getSchema() != null
+                                          && mediaType.getSchema().getProperties() != null)
+                              .map(
+                                  mediaType -> {
+                                    String schemaName =
+                                        buildSchemaNameFromPath(method.toString(), path);
+                                    return Map.entry(schemaName, mediaType.getSchema());
+                                  });
+                        });
+              })
+          .filter(entry -> schemas.stream().noneMatch(s -> s.name().equals(entry.getKey())))
+          .map(entry -> convertSchema(entry.getKey(), entry.getValue()))
+          .forEach(schemas::add);
     }
 
-    schemas.sort(Comparator.comparing(SchemaDefinition::getName));
+    schemas.sort(Comparator.comparing(SchemaDefinition::name));
     return schemas;
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
   private SchemaDefinition convertSchema(String name, Schema<?> schema) {
     boolean isArray = schema instanceof ArraySchema;
-    List<PropertyDefinition> properties = new ArrayList<>();
+    Schema<?> targetSchema =
+        (schema instanceof ArraySchema arraySchema) ? arraySchema.getItems() : schema;
+    List<PropertyDefinition> properties =
+        (targetSchema != null && targetSchema.getProperties() != null)
+            ? convertProperties(targetSchema)
+            : new ArrayList<>();
 
-    Schema<?> targetSchema = isArray ? ((ArraySchema) schema).getItems() : schema;
-
-    if (targetSchema != null && targetSchema.getProperties() != null) {
-      Set<String> requiredFields = new HashSet<>();
-      if (targetSchema.getRequired() != null) {
-        requiredFields.addAll(targetSchema.getRequired());
-      }
-
-      for (Map.Entry<String, Schema> entry :
-          ((Map<String, Schema>) targetSchema.getProperties()).entrySet()) {
-        PropertyDefinition prop =
-            convertProperty(
-                entry.getKey(), entry.getValue(), requiredFields.contains(entry.getKey()));
-        properties.add(prop);
-      }
-    }
-
-    String description = schema.getDescription();
+    String description = schema != null ? schema.getDescription() : null;
     return new SchemaDefinition(name, description, properties, isArray);
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
+  private List<PropertyDefinition> convertProperties(Schema<?> targetSchema) {
+    Set<String> requiredFields =
+        targetSchema.getRequired() != null
+            ? new HashSet<>(targetSchema.getRequired())
+            : new HashSet<>();
+
+    return targetSchema.getProperties().entrySet().stream()
+        .map(
+            entry ->
+                convertProperty(
+                    entry.getKey(), entry.getValue(), requiredFields.contains(entry.getKey())))
+        .toList();
+  }
+
   private PropertyDefinition convertProperty(String name, Schema<?> schema, boolean required) {
     String type = schema.getType();
     String format = schema.getFormat();
     String description = schema.getDescription();
     Object exampleValue = schema.getExample();
 
-    List<String> enumValues = new ArrayList<>();
-    if (schema.getEnum() != null) {
-      for (Object enumVal : schema.getEnum()) {
-        if (enumVal != null) {
-          enumValues.add(String.valueOf(enumVal));
-        }
-      }
-    }
+    List<String> enumValues =
+        schema.getEnum() != null
+            ? schema.getEnum().stream().filter(Objects::nonNull).map(String::valueOf).toList()
+            : new ArrayList<>();
 
     PropertyDefinition items = null;
     if (schema instanceof ArraySchema arraySchema && arraySchema.getItems() != null) {
@@ -131,17 +137,21 @@ public class OpenApiSpecificationParser {
 
     Map<String, PropertyDefinition> nestedProperties = new LinkedHashMap<>();
     if ("object".equals(type) && schema.getProperties() != null) {
-      Set<String> nestedRequired = new HashSet<>();
-      if (schema.getRequired() != null) {
-        nestedRequired.addAll(schema.getRequired());
-      }
-      for (Map.Entry<String, Schema> entry :
-          ((Map<String, Schema>) schema.getProperties()).entrySet()) {
-        nestedProperties.put(
-            entry.getKey(),
-            convertProperty(
-                entry.getKey(), entry.getValue(), nestedRequired.contains(entry.getKey())));
-      }
+      Set<String> nestedRequired =
+          schema.getRequired() != null ? new HashSet<>(schema.getRequired()) : new HashSet<>();
+
+      nestedProperties =
+          schema.getProperties().entrySet().stream()
+              .collect(
+                  LinkedHashMap::new,
+                  (map, entry) ->
+                      map.put(
+                          entry.getKey(),
+                          convertProperty(
+                              entry.getKey(),
+                              entry.getValue(),
+                              nestedRequired.contains(entry.getKey()))),
+                  LinkedHashMap::putAll);
     }
 
     return new PropertyDefinition(
@@ -157,19 +167,17 @@ public class OpenApiSpecificationParser {
   }
 
   private String buildSchemaNameFromPath(String method, String path) {
-    String[] parts = path.split("/");
     StringBuilder name = new StringBuilder(method.toLowerCase());
-    for (String part : parts) {
-      if (!part.isEmpty() && !part.startsWith("{")) {
-        name.append(capitalize(part));
-      }
-    }
+    Stream.of(path.split("/"))
+        .filter(part -> !part.isEmpty() && !part.startsWith("{"))
+        .map(this::capitalize)
+        .forEach(name::append);
     name.append("RequestBody");
+
     return name.toString();
   }
 
   private String capitalize(String s) {
-    if (s == null || s.isEmpty()) return s;
-    return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    return s == null || s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1);
   }
 }
