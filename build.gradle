@@ -9,7 +9,7 @@ version = '1.0.0'
 java {
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
-    toolchains {
+    toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
 }
@@ -42,14 +42,6 @@ intellijPlatform {
             sinceBuild = '233'
             untilBuild = provider { null }
         }
-    }
-
-    signing {
-        required = false
-    }
-
-    publishing {
-        token = providers.environmentVariable('PUBLISH_TOKEN')
     }
 }
 
