@@ -1,0 +1,43 @@
+<idea-plugin>
+    <id>com.openapi.generator</id>
+    <name>OpenAPI Example Generator</name>
+    <vendor email="support@openapi-generator.com" url="https://github.com/luisppb16/OpenAPI-Generator">OpenAPI Generator</vendor>
+    <description><![CDATA[
+        <p>Generate realistic example objects from your OpenAPI specifications.</p>
+        <p>Features:</p>
+        <ul>
+            <li>Parse OpenAPI 3.x and Swagger 2.x specifications (YAML and JSON)</li>
+            <li>Select the number of examples to generate per schema</li>
+            <li>Overall counter for total examples</li>
+            <li>Generates valid JSON examples with realistic data</li>
+            <li>Modern, intuitive UI integrated with IntelliJ IDEA</li>
+        </ul>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <notificationGroup id="OpenAPI Generator"
+                           displayType="BALLOON"
+                           isLogByDefault="true"/>
+    </extensions>
+
+    <actions>
+        <group id="OpenAPIGeneratorGroup" text="OpenAPI Generator" popup="true" icon="AllIcons.FileTypes.Json">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+            <action id="com.openapi.generator.GenerateExamplesAction"
+                    class="com.openapi.generator.ui.action.GenerateExamplesAction"
+                    text="Generate Examples from OpenAPI Spec..."
+                    description="Open a dialog to generate example objects from an OpenAPI specification"
+                    icon="AllIcons.Actions.GeneratedFolder"/>
+        </group>
+        <action id="com.openapi.generator.GenerateExamplesAction.EditorContext"
+                class="com.openapi.generator.ui.action.GenerateExamplesAction"
+                text="Generate Examples from OpenAPI Spec..."
+                description="Generate example objects from this OpenAPI specification"
+                icon="AllIcons.Actions.GeneratedFolder">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>
