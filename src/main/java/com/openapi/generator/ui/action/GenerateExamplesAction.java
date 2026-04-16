@@ -1,3 +1,10 @@
+/*
+ * *****************************************************************************
+ * Copyright (c)  2026 Luis Paolo Pepe Barra (@LuisPPB16).
+ * All rights reserved.
+ * *****************************************************************************
+ */
+
 package com.openapi.generator.ui.action;
 
 import com.intellij.openapi.actionSystem.AnAction;
@@ -9,39 +16,41 @@ import com.openapi.generator.ui.dialog.GenerateExamplesDialog;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * IntelliJ action that opens the Generate Examples dialog.
- * Available from the Tools menu and from the right-click context menu on OpenAPI files.
+ * IntelliJ action that opens the Generate Examples dialog. Available from the Tools menu and from
+ * the right-click context menu on OpenAPI files.
  */
 public class GenerateExamplesAction extends AnAction {
 
-    @Override
-    public void actionPerformed(@NotNull AnActionEvent e) {
-        Project project = e.getProject();
-        GenerateExamplesDialog dialog = new GenerateExamplesDialog(project);
+  @Override
+  public void actionPerformed(@NotNull AnActionEvent e) {
+    Project project = e.getProject();
+    GenerateExamplesDialog dialog = new GenerateExamplesDialog(project);
 
-        VirtualFile virtualFile = e.getData(CommonDataKeys.VIRTUAL_FILE);
-        if (virtualFile != null && isOpenApiFile(virtualFile)) {
-            dialog.setSpecFilePath(virtualFile.getPath());
-        }
-
-        dialog.show();
+    VirtualFile virtualFile = e.getData(CommonDataKeys.VIRTUAL_FILE);
+    if (virtualFile != null && isOpenApiFile(virtualFile)) {
+      dialog.setSpecFilePath(virtualFile.getPath());
     }
 
-    @Override
-    public void update(@NotNull AnActionEvent e) {
-        e.getPresentation().setEnabled(true);
-        VirtualFile virtualFile = e.getData(CommonDataKeys.VIRTUAL_FILE);
-        if (virtualFile != null) {
-            boolean isOpenApi = isOpenApiFile(virtualFile);
-            String place = e.getPlace();
-            if ("ProjectViewPopupMenu".equals(place) || "EditorPopupMenu".equals(place)) {
-                e.getPresentation().setEnabledAndVisible(isOpenApi);
-            }
-        }
-    }
+    dialog.show();
+  }
 
-    private boolean isOpenApiFile(VirtualFile file) {
-        String ext = file.getExtension();
-        return "yaml".equalsIgnoreCase(ext) || "yml".equalsIgnoreCase(ext) || "json".equalsIgnoreCase(ext);
+  @Override
+  public void update(@NotNull AnActionEvent e) {
+    e.getPresentation().setEnabled(true);
+    VirtualFile virtualFile = e.getData(CommonDataKeys.VIRTUAL_FILE);
+    if (virtualFile != null) {
+      boolean isOpenApi = isOpenApiFile(virtualFile);
+      String place = e.getPlace();
+      if ("ProjectViewPopupMenu".equals(place) || "EditorPopupMenu".equals(place)) {
+        e.getPresentation().setEnabledAndVisible(isOpenApi);
+      }
     }
+  }
+
+  private boolean isOpenApiFile(VirtualFile file) {
+    String ext = file.getExtension();
+    return "yaml".equalsIgnoreCase(ext)
+        || "yml".equalsIgnoreCase(ext)
+        || "json".equalsIgnoreCase(ext);
+  }
 }
