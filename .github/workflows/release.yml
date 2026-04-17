@@ -42,10 +42,6 @@ jobs:
       # ── Tests ──────────────────────────────────────────────────────────────
       - name: Run tests and generate JaCoCo report
         run: ./gradlew clean test jacocoTestReport --no-daemon
-        env:
-          GRADLE_OPTS: >-
-            -Dcom.mysql.cj.disableAbandonedConnectionCleanup=true
-            -Dpgjdbc.config.cleanup.thread.ttl=1
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
@@ -97,4 +93,3 @@ jobs:
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
           PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
-
