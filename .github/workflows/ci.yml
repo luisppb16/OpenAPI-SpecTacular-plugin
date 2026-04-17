@@ -34,6 +34,9 @@ jobs:
       - name: Grant execute permission to Gradle wrapper
         run: chmod +x gradlew
 
+      - name: Validate Gradle wrapper
+        run: ./gradlew --version --no-daemon
+
       - name: Compile
         run: ./gradlew compileJava compileTestJava --no-daemon
 
@@ -80,6 +83,9 @@ jobs:
 
       - name: Grant execute permission to Gradle wrapper
         run: chmod +x gradlew
+
+      - name: Validate Gradle wrapper
+        run: ./gradlew --version --no-daemon
 
       - name: Build plugin
         run: ./gradlew buildPlugin --no-daemon
