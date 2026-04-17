@@ -14,6 +14,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
+import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
@@ -156,7 +157,6 @@ public class GenerateExamplesDialog extends DialogWrapper {
     return mainPanel;
   }
 
-  @SuppressWarnings("removal")
   private JPanel createTopPanel() {
     JPanel panel = new JPanel(new GridBagLayout());
     panel.setBorder(
@@ -179,17 +179,11 @@ public class GenerateExamplesDialog extends DialogWrapper {
 
     specFileField = new TextFieldWithBrowseButton();
     specFileField.addBrowseFolderListener(
-        "Select OpenAPI Specification",
-        "Choose a YAML or JSON OpenAPI specification file",
         project,
-        FileChooserDescriptorFactory.createSingleFileDescriptor()
-            .withFileFilter(
-                vf -> {
-                  String ext = vf.getExtension();
-                  return "yaml".equalsIgnoreCase(ext)
-                      || "yml".equalsIgnoreCase(ext)
-                      || "json".equalsIgnoreCase(ext);
-                }));
+        FileChooserDescriptorFactory.singleFile()
+            .withTitle("Select OpenAPI Specification")
+            .withDescription("Choose a YAML or JSON OpenAPI specification file")
+            .withExtensionFilter("YAML & JSON Files", "yaml", "yml", "json"));
     gbc.gridx = 1;
     gbc.weightx = 1.0;
     panel.add(specFileField, gbc);
@@ -210,10 +204,10 @@ public class GenerateExamplesDialog extends DialogWrapper {
     if (project != null && project.getBasePath() != null)
       outputDirField.setText(project.getBasePath() + "/openapi-examples");
     outputDirField.addBrowseFolderListener(
-        "Select Output Directory",
-        "Choose where to save the generated example files",
         project,
-        FileChooserDescriptorFactory.createSingleFolderDescriptor());
+        FileChooserDescriptorFactory.singleDir()
+            .withTitle("Select Output Directory")
+            .withDescription("Choose where to save the generated example files"));
     gbc.gridx = 1;
     gbc.weightx = 1.0;
     panel.add(outputDirField, gbc);
@@ -320,6 +314,11 @@ public class GenerateExamplesDialog extends DialogWrapper {
     return panel;
   }
 
+  private void refreshProject() {
+    if (project == null || project.getBasePath() == null) return;
+    VirtualFileManager.getInstance().syncRefresh();
+  }
+
   private void setColumnWidth(TableColumn column, int preferred, int max) {
     column.setPreferredWidth(preferred);
     column.setMaxWidth(max);
@@ -387,6 +386,7 @@ public class GenerateExamplesDialog extends DialogWrapper {
   @Override
   protected void doOKAction() {
     if (generationCompleted) {
+      refreshProject();
       super.doOKAction();
       return;
     }

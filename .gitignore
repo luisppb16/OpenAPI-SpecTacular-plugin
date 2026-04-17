@@ -44,3 +44,4 @@ gradlew
 /bin
 .project
 /.intellijPlatform
+.classpath
