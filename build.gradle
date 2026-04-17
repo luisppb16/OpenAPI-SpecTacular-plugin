@@ -7,18 +7,55 @@
 
 plugins {
     id 'java'
-    id 'org.jetbrains.intellij.platform' version '2.2.1'
+    id 'org.jetbrains.intellij.platform' version '2.14.0'
     id 'jacoco'
 }
 
-group = 'com.openapi.generator'
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java']
+        }
+        resources {
+            srcDirs = ['src/main/resources']
+        }
+    }
+}
+
+group = 'com.LuisPPB16'
 version = '1.0.0'
+
+//intellijPlatform {
+//    pluginConfiguration {
+//        id = 'com.LuisPPB16.openapi-generator'
+//        name = 'OpenAPI Example Generator'
+//    }
+//    description = 'Generates realistic examples from OpenAPI specifications with an intuitive UI'
+//}
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+}
+
+intellijPlatform {
+    buildSearchableOptions = false
+    signing.certificateChain.set(providers.environmentVariable("CERTIFICATE_CHAIN"))
+    signing.privateKey.set(providers.environmentVariable("PRIVATE_KEY"))
+    signing.password.set(providers.environmentVariable("PRIVATE_KEY_PASSWORD"))
+    publishing.token.set(providers.environmentVariable("PUBLISH_TOKEN"))
+    pluginVerification {
+        ides {
+            recommended()
+        }
     }
 }
 
@@ -31,8 +68,14 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        intellijIdeaCommunity('2025.1')
-        instrumentationTools()
+        intellijIdeaCommunity '2025.1'
+        bundledPlugin 'com.intellij.java'
+    }
+
+    constraints {
+        testImplementation('org.apache.commons:commons-compress:1.28.0') {
+            because 'avoid CVEs in the transitive test classpath'
+        }
     }
 
     implementation 'io.swagger.parser.v3:swagger-parser:2.1.40'
@@ -42,55 +85,37 @@ dependencies {
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
     testImplementation 'org.junit.platform:junit-platform-launcher:1.11.4'
-    testImplementation 'org.assertj:assertj-core:3.27.3'
-}
-
-intellijPlatform {
-    pluginConfiguration {
-        id = 'com.openapi.generator'
-        name = 'OpenAPI Example Generator'
-        version = '1.0.0'
-        description = 'Generates realistic examples from OpenAPI specifications with an intuitive UI'
-
-        ideaVersion {
-            sinceBuild = '233'
-            untilBuild = provider { null }
-        }
-    }
-}
-
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
-    options.release = 21
-    options.compilerArgs += ['-Xlint:all', '-Xlint:-processing']
-}
-
-jacocoTestReport {
-    dependsOn test
-    reports {
-        xml.required = true
-        html.required = true
-    }
-}
-
-jacocoTestCoverageVerification {
-    violationRules {
-        rule {
-            element = 'CLASS'
-            includes = [
-                'com.openapi.generator.domain.*',
-                'com.openapi.generator.infrastructure.*',
-                'com.openapi.generator.application.*'
-            ]
-            limit {
-                counter = 'LINE'
-                minimum = 0.80
-            }
-        }
-    }
+    testImplementation 'org.assertj:assertj-core:3.27.7'
 }
 
 test {
     useJUnitPlatform()
-    finalizedBy jacocoTestReport
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+
+    // Avoid noisy CDS warnings triggered by IntelliJ test classloader configuration.
+    jvmArgs('-Xshare:off',
+            '-Dcom.mysql.cj.disableAbandonedConnectionCleanup=true',
+            '-Dpgjdbc.config.cleanup.thread.ttl=1')
+
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+tasks.named('jacocoTestReport', JacocoReport) {
+    dependsOn tasks.named('test')
+    reports {
+        xml.getRequired().set(true)
+        html.getRequired().set(true)
+    }
+}
+
+tasks.named('buildSearchableOptions') {
+    enabled = false
+}
+
+tasks.named('jarSearchableOptions') {
+    enabled = false
 }

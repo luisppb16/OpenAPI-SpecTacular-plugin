@@ -43,3 +43,4 @@ gradlew
 .settings/org.eclipse.jdt.core.prefs
 /bin
 .project
+/.intellijPlatform
