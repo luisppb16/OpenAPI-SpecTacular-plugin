@@ -42,11 +42,6 @@ jobs:
 
       - name: Run unit tests
         run: ./gradlew test --no-daemon
-        env:
-          # Suppress CDS and driver cleanup warnings in CI
-          GRADLE_OPTS: >
-            -Dcom.mysql.cj.disableAbandonedConnectionCleanup=true
-            -Dpgjdbc.config.cleanup.thread.ttl=1
 
       - name: Generate JaCoCo coverage report
         run: ./gradlew jacocoTestReport --no-daemon

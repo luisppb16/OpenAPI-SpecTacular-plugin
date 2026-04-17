@@ -94,6 +94,8 @@ test {
         events "passed", "skipped", "failed"
     }
 
+    maxHeapSize = '512m'
+
     // Avoid noisy CDS warnings triggered by IntelliJ test classloader configuration.
     jvmArgs('-Xshare:off',
             '-Dcom.mysql.cj.disableAbandonedConnectionCleanup=true',
