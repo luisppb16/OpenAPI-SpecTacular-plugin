@@ -10,7 +10,10 @@ package com.luisppb16.openapi.generator.domain.model;
 import java.util.List;
 import java.util.Map;
 
-/** Represents a single property within an OpenAPI schema, including its type, format, constraints, and nested structure. */
+/**
+ * Represents a single property within an OpenAPI schema, including its type, format, constraints,
+ * and nested structure.
+ */
 public record PropertyDefinition(
     String name,
     String type,

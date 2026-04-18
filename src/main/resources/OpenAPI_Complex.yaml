@@ -91,8 +91,8 @@ paths:
       summary: Registrar una nueva mascota
       description: Crear una mascota. Se acepta imagen en multipart/form-data o JSON con datos.
       security:
-        - BearerAuth: []
-        - ApiKeyAuth: []
+        - BearerAuth: [ ]
+        - ApiKeyAuth: [ ]
       requestBody:
         required: true
         content:
@@ -195,7 +195,7 @@ paths:
       summary: Crear pedido
       description: Crea un pedido y opcionalmente notifica vía callback cuando el envío cambie de estado.
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -633,7 +633,7 @@ components:
   # Security schemes definidos arriba
 
 security:
-  - ApiKeyAuth: []
+  - ApiKeyAuth: [ ]
 
 
 # Componentes adicionales para mostrar headers, encoding y otros

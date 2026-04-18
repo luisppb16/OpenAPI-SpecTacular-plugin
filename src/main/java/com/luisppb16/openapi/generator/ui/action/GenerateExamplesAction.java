@@ -15,7 +15,10 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.luisppb16.openapi.generator.ui.dialog.GenerateExamplesDialog;
 import org.jetbrains.annotations.NotNull;
 
-/** IntelliJ action that triggers the OpenAPI Example Generator dialog from the editor or project view context menu. */
+/**
+ * IntelliJ action that triggers the OpenAPI Example Generator dialog from the editor or project
+ * view context menu.
+ */
 public class GenerateExamplesAction extends AnAction {
 
   @Override

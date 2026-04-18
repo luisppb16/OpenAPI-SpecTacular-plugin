@@ -14,11 +14,11 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
-import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
+import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
@@ -202,7 +202,7 @@ public class GenerateExamplesDialog extends DialogWrapper {
 
     outputDirField = new TextFieldWithBrowseButton();
     if (project != null && project.getBasePath() != null)
-      outputDirField.setText(project.getBasePath() + "/openapi-examples");
+      outputDirField.setText(project.getBasePath() + "/src/main/resources/openapi-examples");
     outputDirField.addBrowseFolderListener(
         project,
         FileChooserDescriptorFactory.singleDir()
