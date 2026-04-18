@@ -1,0 +1,652 @@
+openapi: 3.1.0
+info:
+  title: API Galáctica de Mascotas - Especificación Compleja
+  description: |
+    Especificación de ejemplo que demuestra características avanzadas de OpenAPI 3.1.
+    Incluye: seguridad múltiple, discriminadores, oneOf/anyOf/allOf, callbacks, links,
+    ejemplos, codificación de multipart, parámetros con estilos, respuestas con headers,
+    y servidores con variables.
+  version: 2.0.0
+  contact:
+    name: Soporte Intergaláctico
+    url: https://soporte.galaxia.example
+    email: soporte@galaxia.example
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+  - url: https://{region}.api.galaxia.example/v2
+    description: Servidor principal, con variable de región
+    variables:
+      region:
+        default: eu-central
+        enum: [ eu-central, us-west, ap-south ]
+        description: Región del cluster
+  - url: http://localhost:8080/api
+    description: Desarrollo local
+tags:
+  - name: Mascotas
+    description: Operaciones relacionadas con criaturas espaciales
+  - name: Pedidos
+    description: Gestión de pedidos y envíos
+  - name: Administración
+    description: Endpoints administrativos
+externalDocs:
+  description: Documentación adicional
+  url: https://docs.galaxia.example
+
+paths:
+  /mascotas:
+    get:
+      tags: [ Mascotas ]
+      summary: Listar mascotas (respuesta paginada)
+      description: Devuelve una lista paginada. Soporta filtrado por especie y tags (matriz).
+      parameters:
+        - $ref: '#/components/parameters/limit'
+        - name: especie
+          in: query
+          schema:
+            type: string
+          description: Filtrar por especie
+        - name: tags
+          in: path
+          description: Filtrado por tags usando estilo matrix
+          required: false
+          style: matrix
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: Lista paginada de mascotas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMascotas'
+              examples:
+                ejemploSimple:
+                  summary: Ejemplo simple de respuesta
+                  value:
+                    total: 1
+                    limit: 10
+                    offset: 0
+                    items:
+                      - id: "550e8400-e29b-41d4-a716-446655440000"
+                        nombre: "Zorg"
+                        especie: "Tentaculón de Venus"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          description: Demasiadas solicitudes
+          headers:
+            Retry-After:
+              description: Segundos para reintentar
+              schema:
+                type: integer
+
+    post:
+      tags: [ Mascotas ]
+      summary: Registrar una nueva mascota
+      description: Crear una mascota. Se acepta imagen en multipart/form-data o JSON con datos.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MascotaCreate'
+            examples:
+              jsonEjemplo:
+                value:
+                  nombre: "Gloop"
+                  especieTipo: "amphibian"
+                  edad: 12
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                metadata:
+                  $ref: '#/components/schemas/MascotaCreate'
+                imagen:
+                  type: string
+                  format: binary
+            encoding:
+              imagen:
+                contentType: image/png
+                headers:
+                  X-Image-Version:
+                    description: Versión del formato
+                    schema:
+                      type: string
+      responses:
+        '201':
+          description: Mascota creada
+          headers:
+            Location:
+              description: URL para obtener la nueva mascota
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mascota'
+              examples:
+                creado:
+                  value:
+                    id: "c9b1f8e4-1234-4d2b-a5f0-111111111111"
+                    nombre: "Gloop"
+                    especie: "Anfibio Espacial"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /mascotas/{mascotaId}:
+    parameters:
+      - $ref: '#/components/parameters/mascotaId'
+    get:
+      operationId: getMascotaById
+      tags: [ Mascotas ]
+      summary: Obtener una mascota por id
+      responses:
+        '200':
+          description: Mascota encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mascota'
+              examples:
+                conOwner:
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    nombre: "Zorg"
+                    especie: "Tentaculón de Venus"
+                    owner:
+                      nombre: "Ava"
+                      contacto:
+                        email: ava@planeta.example
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [ Mascotas ]
+      summary: Actualizar parcialmente una mascota
+      requestBody:
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/MascotaPatch'
+      responses:
+        '200':
+          description: Mascota actualizada
+        '409':
+          description: Conflicto - versión desactualizada
+    delete:
+      tags: [ Mascotas ]
+      summary: Eliminar una mascota
+      responses:
+        '204':
+          description: Eliminado correctamente
+
+  /pedidos:
+    post:
+      tags: [ Pedidos ]
+      summary: Crear pedido
+      description: Crea un pedido y opcionalmente notifica vía callback cuando el envío cambie de estado.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PedidoCreate'
+      responses:
+        '201':
+          description: Pedido creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+              examples:
+                pedidoEjemplo:
+                  value:
+                    id: "ord_0001"
+                    estado: "procesando"
+          links:
+            getPedido:
+              operationId: getPedidoById
+              parameters:
+                pedidoId: "$response.body#/id"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      callbacks:
+        onOrderStatus:
+          '{$request.body#/callbackUrl}':
+            post:
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/OrderStatusNotification'
+              responses:
+                '200':
+                  description: Callback recibido
+
+  /pedidos/{pedidoId}:
+    parameters:
+      - name: pedidoId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getPedidoById
+      tags: [ Pedidos ]
+      summary: Obtener un pedido por id
+      responses:
+        '200':
+          description: Pedido encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+              examples:
+                ejemploPedido:
+                  value:
+                    id: "ord_0001"
+                    estado: "enviado"
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /inventario:
+    get:
+      tags: [ Administración ]
+      summary: Consultar inventario por región
+      parameters:
+        - name: X-Region
+          in: header
+          schema:
+            type: string
+          required: false
+          description: Prioriza inventario en la región indicada
+        - name: session_id
+          in: cookie
+          schema:
+            type: string
+          required: false
+      responses:
+        '200':
+          description: Inventario disponible
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  detalles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InventarioItem'
+
+  /admin/health:
+    get:
+      tags: [ Administración ]
+      summary: Estado del sistema
+      description: Endpoint de salud que devuelve métricas y versiones
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  version:
+                    type: string
+                  uptimeSeconds:
+                    type: number
+              examples:
+                statusExample:
+                  value:
+                    status: "ok"
+                    version: "2.0.0"
+                    uptimeSeconds: 123456.7
+
+  /bulk/upload:
+    post:
+      tags: [ Administración ]
+      summary: Subir lote de mascotas mediante archivo CSV
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '202':
+          description: Archivo aceptado para procesamiento asíncrono
+          headers:
+            X-Job-Id:
+              description: ID del trabajo en background
+              schema:
+                type: string
+
+components:
+  parameters:
+    limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
+      description: Límite de resultados por página
+    mascotaId:
+      name: mascotaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: ID de la mascota
+
+  responses:
+    BadRequest:
+      description: Petición inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: No autorizado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ErrorServidor:
+      description: Error interno del servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://auth.galaxia.example/oauth/authorize
+          tokenUrl: https://auth.galaxia.example/oauth/token
+          scopes:
+            mascotas: Acceso a recursos de mascotas
+            pedidos: Gestionar pedidos
+
+  schemas:
+    # Polimorfismo con discriminador
+    Criatura:
+      type: object
+      required: [ id, nombre, especieTipo ]
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        nombre:
+          type: string
+        edad:
+          type: integer
+          minimum: 0
+        especieTipo:
+          type: string
+      discriminator:
+        propertyName: especieTipo
+      oneOf:
+        - $ref: '#/components/schemas/Anfibio'
+        - $ref: '#/components/schemas/Volador'
+        - $ref: '#/components/schemas/Quadrupedo'
+
+    Anfibio:
+      type: object
+      properties:
+        especieTipo:
+          type: string
+          const: amphibian
+        piel:
+          type: string
+          enum: [ viscosa, escamosa ]
+        acuatico:
+          type: boolean
+
+    Volador:
+      type: object
+      properties:
+        especieTipo:
+          type: string
+          const: flyer
+        envergadura:
+          type: number
+          description: Envergadura en metros
+
+    Quadrupedo:
+      type: object
+      properties:
+        especieTipo:
+          type: string
+          const: quadruped
+        patas:
+          type: integer
+
+    Mascota:
+      allOf:
+        - $ref: '#/components/schemas/Criatura'
+        - type: object
+          required: [ nombre, especie ]
+          properties:
+            especie:
+              type: string
+            estado:
+              type: string
+              enum: [ disponible, reservado, vendido ]
+              default: disponible
+            owner:
+              $ref: '#/components/schemas/Persona'
+            metadata:
+              type: object
+              additionalProperties: true
+
+    MascotaCreate:
+      type: object
+      required: [ nombre, especieTipo ]
+      properties:
+        nombre:
+          type: string
+        especieTipo:
+          type: string
+        edad:
+          type: integer
+          minimum: 0
+        especie:
+          type: string
+        ownerId:
+          type: string
+
+    MascotaPatch:
+      type: object
+      description: Esquema para JSON Merge Patch
+      additionalProperties: true
+
+    Persona:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+        contacto:
+          type: object
+          properties:
+            email:
+              type: string
+              format: email
+            telefono:
+              type: string
+
+    PedidoCreate:
+      type: object
+      required: [ items, direccionEnvio ]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PedidoItem'
+        direccionEnvio:
+          $ref: '#/components/schemas/Direccion'
+        callbackUrl:
+          type: string
+          format: uri
+
+    PedidoItem:
+      type: object
+      required: [ productoId, cantidad ]
+      properties:
+        productoId:
+          type: string
+        cantidad:
+          type: integer
+          minimum: 1
+
+    Direccion:
+      type: object
+      required: [ calle, ciudad, pais ]
+      properties:
+        calle:
+          type: string
+        numero:
+          type: string
+        ciudad:
+          type: string
+        codigoPostal:
+          type: string
+        pais:
+          type: string
+
+    Pedido:
+      type: object
+      properties:
+        id:
+          type: string
+        estado:
+          type: string
+          enum: [ procesando, enviado, entregado, cancelado ]
+        total:
+          type: number
+          format: double
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PedidoItem'
+
+    OrderStatusNotification:
+      type: object
+      properties:
+        pedidoId:
+          type: string
+        estado:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    PaginatedMascotas:
+      type: object
+      properties:
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Mascota'
+
+    InventarioItem:
+      type: object
+      properties:
+        productoId:
+          type: string
+        cantidad:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        codigo:
+          type: integer
+        mensaje:
+          type: string
+
+  examples:
+    MascotaFull:
+      summary: Mascota completa con owner
+      value:
+        id: "550e8400-e29b-41d4-a716-446655440000"
+        nombre: "Zorg"
+        especie: "Tentaculón de Venus"
+        especieTipo: amphibian
+        edad: 150
+        owner:
+          nombre: "Ava"
+          contacto:
+            email: ava@planeta.example
+
+  links:
+    MascotaById:
+      description: Obtener la mascota creada
+      operationId: getMascotaById
+      parameters:
+        mascotaId: "$response.body#/id"
+
+  # Security schemes definidos arriba
+
+security:
+  - ApiKeyAuth: []
+
+
+# Componentes adicionales para mostrar headers, encoding y otros
+
+x-meta:
+  generatedBy: "Especificación de ejemplo compleja"
+  date: "2026-04-18"
+
+
+# --- FIN DE ESPECIFICACIÓN ---
+
+
+
+
+
+
