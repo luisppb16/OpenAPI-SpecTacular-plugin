@@ -31,7 +31,7 @@
     </extensions>
 
     <actions>
-        <group id="OpenAPIGeneratorGroup" text="OpenAPI Generator" popup="true" icon="AllIcons.FileTypes.Json">
+        <group id="OpenAPIGeneratorGroup" text="OpenAPI SpecTacular" popup="true" icon="AllIcons.FileTypes.Json">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
             <action id="com.openapi.generator.GenerateExamplesAction"
                     class="com.luisppb16.openapi.generator.ui.action.GenerateExamplesAction"
