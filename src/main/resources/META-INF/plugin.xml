@@ -13,11 +13,11 @@
         <p>Generate realistic example objects from your OpenAPI specifications.</p>
         <p>Features:</p>
         <ul>
+            <li>Right-click over the OpenApi Specification file</li>
             <li>Parse OpenAPI 3.x and Swagger 2.x specifications (YAML and JSON)</li>
             <li>Select the number of examples to generate per schema</li>
             <li>Overall counter for total examples</li>
             <li>Generates valid JSON examples with realistic data</li>
-            <li>Modern, intuitive UI integrated with IntelliJ IDEA</li>
         </ul>
     ]]></description>
 
