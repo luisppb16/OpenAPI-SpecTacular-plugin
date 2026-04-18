@@ -17,10 +17,10 @@ IntelliJ IDEA plugin that generates realistic JSON example data from OpenAPI (3.
 
 ## Requirements
 
-| Requirement   | Version              |
-|---------------|----------------------|
-| IntelliJ IDEA | 2023.3+ (build 233+) |
-| Java          | 21                   |
+| Requirement   | Version |
+|---------------|---------|
+| IntelliJ IDEA | 2025.1  |
+| Java          | 21      |
 
 ## Installation
 
