@@ -7,11 +7,19 @@
 
 package com.luisppb16.openapi.generator.domain.model;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.util.List;
 
-/** Holds the generated JSON example strings for a specific schema name. */
-public record GeneratedExample(String schemaName, List<String> exampleJsonStrings) {
-  public int getCount() {
-    return exampleJsonStrings.size();
-  }
+/**
+ * Holds the generated example trees for a specific schema name.
+ */
+public record GeneratedExample(String schemaName, List<JsonNode> examples) {
+    public GeneratedExample {
+        examples = examples == null ? List.of() : List.copyOf(examples);
+    }
+
+    public int getCount() {
+        return examples.size();
+    }
 }

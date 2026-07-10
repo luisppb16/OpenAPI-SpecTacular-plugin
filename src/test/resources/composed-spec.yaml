@@ -1,0 +1,58 @@
+openapi: 3.0.3
+info:
+  title: Composed Schemas Test API
+  version: 1.0.0
+paths: { }
+components:
+  schemas:
+    BasePet:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        tag:
+          type: string
+    Dog:
+      allOf:
+        - $ref: '#/components/schemas/BasePet'
+        - type: object
+          required:
+            - barkVolume
+          properties:
+            barkVolume:
+              type: integer
+              minimum: 1
+              maximum: 10
+    Contact:
+      type: object
+      properties:
+        identifier:
+          oneOf:
+            - type: string
+              format: email
+            - type: integer
+        nickname:
+          anyOf:
+            - type: string
+              maxLength: 12
+            - type: boolean
+    Constrained:
+      type: object
+      properties:
+        score:
+          type: number
+          minimum: 0
+          maximum: 100
+        username:
+          type: string
+          minLength: 3
+          maxLength: 20
+          pattern: '^[a-z]+$'
+        tags:
+          type: array
+          minItems: 2
+          maxItems: 5
+          items:
+            type: string

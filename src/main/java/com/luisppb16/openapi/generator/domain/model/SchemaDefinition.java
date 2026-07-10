@@ -8,14 +8,14 @@
 package com.luisppb16.openapi.generator.domain.model;
 
 import java.util.List;
-import javax.validation.constraints.NotNull;
 
 /**
  * Represents a parsed OpenAPI schema with its name, description, properties, and whether it is an
  * array type.
  */
 public record SchemaDefinition(
-    String name,
-    String description,
-    @NotNull List<PropertyDefinition> properties,
-    boolean isArrayType) {}
+        String name, String description, List<PropertyDefinition> properties, boolean isArrayType) {
+    public SchemaDefinition {
+        properties = properties == null ? List.of() : List.copyOf(properties);
+    }
+}

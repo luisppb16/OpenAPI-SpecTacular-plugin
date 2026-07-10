@@ -16,8 +16,11 @@
             <li>Right-click over the OpenApi Specification file</li>
             <li>Parse OpenAPI 3.x and Swagger 2.x specifications (YAML and JSON)</li>
             <li>Select the number of examples to generate per schema</li>
-            <li>Overall counter for total examples</li>
-            <li>Generates valid JSON examples with realistic data</li>
+            <li>Preview the generated output and copy it to the clipboard</li>
+            <li>Export examples as JSON or YAML, per schema or combined</li>
+            <li>Respects schema constraints (enums, min/max, lengths, oneOf/anyOf/allOf)</li>
+            <li>Validate OpenAPI specs and see parser errors and warnings</li>
+            <li>Configurable defaults in Settings | Tools | OpenAPI SpecTacular</li>
         </ul>
     ]]></description>
 
@@ -28,22 +31,39 @@
         <notificationGroup id="OpenAPI Generator"
                            displayType="BALLOON"
                            isLogByDefault="true"/>
+        <applicationConfigurable parentId="tools"
+                                 id="com.luisppb16.openapi.generator.settings"
+                                 displayName="OpenAPI SpecTacular"
+                                 instance="com.luisppb16.openapi.generator.settings.ExampleGeneratorConfigurable"/>
     </extensions>
 
     <actions>
         <group id="OpenAPIGeneratorGroup" text="OpenAPI SpecTacular" popup="true" icon="AllIcons.FileTypes.Json">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
-            <action id="com.openapi.generator.GenerateExamplesAction"
+            <action id="com.luisppb16.openapi.generator.GenerateExamplesAction"
                     class="com.luisppb16.openapi.generator.ui.action.GenerateExamplesAction"
                     text="Generate Examples from OpenAPI Specification"
                     description="Open a dialog to generate example objects from an OpenAPI specification"
                     icon="AllIcons.Actions.GeneratedFolder"/>
+            <action id="com.luisppb16.openapi.generator.ValidateOpenApiSpecAction"
+                    class="com.luisppb16.openapi.generator.ui.action.ValidateOpenApiSpecAction"
+                    text="Validate OpenAPI Specification"
+                    description="Validate the selected OpenAPI specification and report errors and warnings"
+                    icon="AllIcons.Actions.Checked"/>
         </group>
-        <action id="com.openapi.generator.GenerateExamplesAction.EditorContext"
+        <action id="com.luisppb16.openapi.generator.GenerateExamplesAction.EditorContext"
                 class="com.luisppb16.openapi.generator.ui.action.GenerateExamplesAction"
                 text="Generate Examples from OpenAPI Specification"
                 description="Generate example objects from this OpenAPI specification"
                 icon="AllIcons.Actions.GeneratedFolder">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+        <action id="com.luisppb16.openapi.generator.ValidateOpenApiSpecAction.EditorContext"
+                class="com.luisppb16.openapi.generator.ui.action.ValidateOpenApiSpecAction"
+                text="Validate OpenAPI Specification"
+                description="Validate this OpenAPI specification and report errors and warnings"
+                icon="AllIcons.Actions.Checked">
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>

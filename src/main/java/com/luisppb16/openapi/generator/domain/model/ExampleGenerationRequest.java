@@ -11,10 +11,26 @@ import java.util.Map;
 
 /**
  * Encapsulates the user request for generating examples, including the spec file path, per-schema
- * counts, output directory, and combine flag.
+ * counts, output directory, combine flag, and output format.
  */
 public record ExampleGenerationRequest(
-    String specFilePath,
-    Map<String, Integer> schemaExampleCounts,
-    String outputDirectory,
-    boolean combineOutput) {}
+        String specFilePath,
+        Map<String, Integer> schemaExampleCounts,
+        String outputDirectory,
+        boolean combineOutput,
+        OutputFormat outputFormat) {
+    public ExampleGenerationRequest {
+        if (outputFormat == null) outputFormat = OutputFormat.JSON;
+    }
+
+    /**
+     * Convenience constructor that keeps the original four-component signature (JSON format).
+     */
+    public ExampleGenerationRequest(
+            String specFilePath,
+            Map<String, Integer> schemaExampleCounts,
+            String outputDirectory,
+            boolean combineOutput) {
+        this(specFilePath, schemaExampleCounts, outputDirectory, combineOutput, OutputFormat.JSON);
+    }
+}
