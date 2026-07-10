@@ -37,7 +37,7 @@ public class GenerateExamplesAction extends AnAction {
 
     @Override
     public void update(@NotNull AnActionEvent e) {
-        if (ActionPlaces.isPopupPlace(e.getPlace())) {
+        if (e.isFromContextMenu()) {
             VirtualFile vf = e.getData(CommonDataKeys.VIRTUAL_FILE);
             e.getPresentation().setEnabledAndVisible(vf != null && OpenApiFiles.isOpenApiFile(vf));
         } else {

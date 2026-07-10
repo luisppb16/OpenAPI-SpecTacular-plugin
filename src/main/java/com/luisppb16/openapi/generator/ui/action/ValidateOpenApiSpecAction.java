@@ -38,7 +38,7 @@ public class ValidateOpenApiSpecAction extends AnAction {
     public void update(@NotNull AnActionEvent e) {
         VirtualFile vf = e.getData(CommonDataKeys.VIRTUAL_FILE);
         boolean isSpec = vf != null && OpenApiFiles.isOpenApiFile(vf);
-        if (ActionPlaces.isPopupPlace(e.getPlace())) {
+        if (e.isFromContextMenu()) {
             e.getPresentation().setEnabledAndVisible(isSpec);
         } else {
             // Tools menu: keep the entry visible, but it needs a spec file in focus to run.
