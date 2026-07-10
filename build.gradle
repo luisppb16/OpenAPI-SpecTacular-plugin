@@ -1,13 +1,6 @@
-/*
- * *****************************************************************************
- * Copyright (c)  2026 Luis Paolo Pepe Barra (@LuisPPB16).
- * All rights reserved.
- * *****************************************************************************
- */
-
 plugins {
     id 'java'
-    id 'org.jetbrains.intellij.platform' version '2.14.0'
+    id 'org.jetbrains.intellij.platform' version '2.17.0'
     id 'jacoco'
 }
 
@@ -23,15 +16,7 @@ sourceSets {
 }
 
 group = 'com.LuisPPB16'
-version = '1.0.0'
-
-//intellijPlatform {
-//    pluginConfiguration {
-//        id = 'com.LuisPPB16.openapi-generator'
-//        name = 'OpenAPI Example Generator'
-//    }
-//    description = 'Generates realistic examples from OpenAPI specifications with an intuitive UI'
-//}
+version = '1.1.0'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -78,9 +63,9 @@ dependencies {
         }
     }
 
-    implementation 'io.swagger.parser.v3:swagger-parser:2.1.40'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.0'
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.17.0'
+    implementation 'io.swagger.parser.v3:swagger-parser:2.1.45'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.22.1'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.22.1'
     compileOnly 'org.projectlombok:lombok:1.18.42'
     annotationProcessor 'org.projectlombok:lombok:1.18.42'
 

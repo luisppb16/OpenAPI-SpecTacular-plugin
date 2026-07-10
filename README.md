@@ -28,7 +28,7 @@ IntelliJ IDEA plugin that generates realistic JSON example data from OpenAPI (3.
    ```bash
    ./gradlew buildPlugin
    ```
-2. The distributable is located at `build/distributions/openapi-generator-plugin-1.0.0.zip`.
+2. The distributable is located at `build/distributions/openapi-generator-plugin-X.X.X.zip`.
 3. In IntelliJ IDEA, go to **Settings → Plugins → ⚙️ → Install Plugin from Disk...** and select the ZIP file.
 4. Restart IntelliJ IDEA.
 
@@ -134,7 +134,7 @@ infrastructure/ → External concerns (OpenAPI spec parsing)
 - **Domain models** are Java records: `SchemaDefinition`, `PropertyDefinition`, `GeneratedExample`, `ExampleGenerationRequest`.
 - **Domain & application services** use Lombok where applicable.
 - **Infrastructure** uses [Swagger Parser](https://github.com/swagger-api/swagger-parser) for spec parsing.
-- Built with the [IntelliJ Platform Plugin SDK](https://plugins.jetbrains.com/docs/intellij/) v2.2.1.
+- Built with the [IntelliJ Platform Gradle Plugin](https://plugins.jetbrains.com/docs/intellij/).
 
 ## Build
 

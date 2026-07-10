@@ -24,6 +24,22 @@
         </ul>
     ]]></description>
 
+    <change-notes><![CDATA[
+        <h3>1.1.0</h3>
+        <ul>
+            <li>Export examples as JSON or YAML, per schema or combined into a single file</li>
+            <li>Preview the generated output in the dialog and copy it to the clipboard</li>
+            <li>New action: Validate OpenAPI Specification, reporting parser errors and warnings</li>
+            <li>New settings page with configurable defaults in Settings | Tools | OpenAPI SpecTacular</li>
+            <li>Respect schema constraints: enums, min/max bounds, string lengths, oneOf/anyOf/allOf</li>
+            <li>Updated build tooling and dependencies</li>
+        </ul>
+        <h3>1.0.0</h3>
+        <ul>
+            <li>Initial release: generate realistic JSON examples from OpenAPI 3.x and Swagger 2.x specs</li>
+        </ul>
+    ]]></change-notes>
+
     <idea-version since-build="251" until-build="261.*"/>
     <depends>com.intellij.modules.platform</depends>
 
