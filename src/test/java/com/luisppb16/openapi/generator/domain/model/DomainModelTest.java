@@ -125,7 +125,7 @@ class GeneratedExampleTest {
     }
 
     @Test
-    void getCount() {
+    void count() {
         GeneratedExample example =
                 new GeneratedExample(
                         "User",
@@ -134,7 +134,7 @@ class GeneratedExampleTest {
                                 JsonNodeFactory.instance.objectNode(),
                                 JsonNodeFactory.instance.objectNode()));
 
-        assertThat(example.getCount()).isEqualTo(3);
+        assertThat(example.count()).isEqualTo(3);
     }
 }
 

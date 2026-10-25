@@ -68,7 +68,7 @@ class ExampleGenerationApplicationServiceTest {
 
         assertThat(results).hasSize(1);
         assertThat(results.get(0).schemaName()).isEqualTo(firstSchema);
-        assertThat(results.get(0).getCount()).isEqualTo(2);
+        assertThat(results.get(0).count()).isEqualTo(2);
     }
 
     @Test

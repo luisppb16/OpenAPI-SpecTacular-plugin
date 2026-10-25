@@ -23,4 +23,12 @@ public enum OutputFormat {
     public String extension() {
         return extension;
     }
+
+    public static OutputFormat fromName(String name) {
+        try {
+            return OutputFormat.valueOf(name);
+        } catch (IllegalArgumentException | NullPointerException wrongValue) {
+            return JSON;
+        }
+    }
 }

@@ -29,14 +29,6 @@ public class ExampleGeneratorConfigurable implements Configurable {
     private JBCheckBox combineCheckbox;
     private JPanel panel;
 
-    static OutputFormat parseFormat(String value) {
-        try {
-            return OutputFormat.valueOf(value);
-        } catch (IllegalArgumentException | NullPointerException e) {
-            return OutputFormat.JSON;
-        }
-    }
-
     @Override
     public @Nls(capitalization = Nls.Capitalization.Title) String getDisplayName() {
         return "OpenAPI SpecTacular";
@@ -65,7 +57,7 @@ public class ExampleGeneratorConfigurable implements Configurable {
     public boolean isModified() {
         ExampleGeneratorSettings.State state = ExampleGeneratorSettings.getInstance().getState();
         return !outputDirField.getText().equals(state.defaultOutputDir)
-                || ((Number) exampleCountSpinner.getValue()).intValue() != state.defaultExampleCount
+                || spinnerValue(exampleCountSpinner) != state.defaultExampleCount
                 || !String.valueOf(formatCombo.getSelectedItem()).equals(state.outputFormat)
                 || combineCheckbox.isSelected() != state.combineOutput;
     }
@@ -74,7 +66,7 @@ public class ExampleGeneratorConfigurable implements Configurable {
     public void apply() {
         ExampleGeneratorSettings.State state = ExampleGeneratorSettings.getInstance().getState();
         state.defaultOutputDir = outputDirField.getText().trim();
-        state.defaultExampleCount = ((Number) exampleCountSpinner.getValue()).intValue();
+        state.defaultExampleCount = spinnerValue(exampleCountSpinner);
         state.outputFormat = String.valueOf(formatCombo.getSelectedItem());
         state.combineOutput = combineCheckbox.isSelected();
     }
@@ -84,7 +76,7 @@ public class ExampleGeneratorConfigurable implements Configurable {
         ExampleGeneratorSettings.State state = ExampleGeneratorSettings.getInstance().getState();
         outputDirField.setText(state.defaultOutputDir);
         exampleCountSpinner.setValue(state.defaultExampleCount);
-        formatCombo.setSelectedItem(parseFormat(state.outputFormat));
+        formatCombo.setSelectedItem(OutputFormat.fromName(state.outputFormat));
         combineCheckbox.setSelected(state.combineOutput);
     }
 
@@ -95,5 +87,9 @@ public class ExampleGeneratorConfigurable implements Configurable {
         exampleCountSpinner = null;
         formatCombo = null;
         combineCheckbox = null;
+    }
+
+    private static int spinnerValue(JSpinner spinner) {
+        return ((Number) spinner.getValue()).intValue();
     }
 }

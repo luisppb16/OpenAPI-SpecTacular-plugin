@@ -19,30 +19,30 @@ import org.jetbrains.annotations.NotNull;
  */
 public class GenerateExamplesAction extends AnAction {
 
-    @Override
-    public @NotNull ActionUpdateThread getActionUpdateThread() {
-        return ActionUpdateThread.BGT;
-    }
+  @Override
+  public @NotNull ActionUpdateThread getActionUpdateThread() {
+    return ActionUpdateThread.BGT;
+  }
 
-    @Override
-    public void actionPerformed(@NotNull AnActionEvent e) {
-        Project project = e.getProject();
-        GenerateExamplesDialog dialog = new GenerateExamplesDialog(project);
-        VirtualFile vf = e.getData(CommonDataKeys.VIRTUAL_FILE);
-        if (vf != null && OpenApiFiles.isOpenApiFile(vf)) {
-            dialog.setSpecFilePath(vf.getPath());
-        }
-        dialog.show();
+  @Override
+  public void actionPerformed(@NotNull AnActionEvent e) {
+    Project project = e.getProject();
+    GenerateExamplesDialog dialog = new GenerateExamplesDialog(project);
+    VirtualFile vf = e.getData(CommonDataKeys.VIRTUAL_FILE);
+    if (vf != null && OpenApiFiles.isOpenApiFile(vf)) {
+      dialog.setSpecFilePath(vf.getPath());
     }
+    dialog.show();
+  }
 
-    @Override
-    public void update(@NotNull AnActionEvent e) {
-        if (e.isFromContextMenu()) {
-            VirtualFile vf = e.getData(CommonDataKeys.VIRTUAL_FILE);
-            e.getPresentation().setEnabledAndVisible(vf != null && OpenApiFiles.isOpenApiFile(vf));
-        } else {
-            // Tools menu: always available; the dialog lets the user pick the spec file.
-            e.getPresentation().setEnabledAndVisible(true);
-        }
+  @Override
+  public void update(@NotNull AnActionEvent e) {
+    if (e.isFromContextMenu()) {
+      VirtualFile vf = e.getData(CommonDataKeys.VIRTUAL_FILE);
+      e.getPresentation().setEnabledAndVisible(vf != null && OpenApiFiles.isOpenApiFile(vf));
+    } else {
+      // Tools menu: always available; the dialog lets the user pick the spec file.
+      e.getPresentation().setEnabledAndVisible(true);
     }
+  }
 }

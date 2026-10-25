@@ -76,7 +76,7 @@ class ExampleGenerationDomainServiceTest {
     void generateExamplesReturnsCorrectCount() {
         GeneratedExample result = service.generateExamples(schema("User", prop("name", "string")), 5);
 
-        assertThat(result.getCount()).isEqualTo(5);
+        assertThat(result.count()).isEqualTo(5);
     }
 
     @Test

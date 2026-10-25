@@ -19,7 +19,7 @@ public record GeneratedExample(String schemaName, List<JsonNode> examples) {
         examples = examples == null ? List.of() : List.copyOf(examples);
     }
 
-    public int getCount() {
+    public int count() {
         return examples.size();
     }
 }

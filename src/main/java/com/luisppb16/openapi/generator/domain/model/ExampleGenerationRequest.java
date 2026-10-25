@@ -14,23 +14,21 @@ import java.util.Map;
  * counts, output directory, combine flag, and output format.
  */
 public record ExampleGenerationRequest(
-        String specFilePath,
-        Map<String, Integer> schemaExampleCounts,
-        String outputDirectory,
-        boolean combineOutput,
-        OutputFormat outputFormat) {
-    public ExampleGenerationRequest {
-        if (outputFormat == null) outputFormat = OutputFormat.JSON;
-    }
+    String specFilePath,
+    Map<String, Integer> schemaExampleCounts,
+    String outputDirectory,
+    boolean combineOutput,
+    OutputFormat outputFormat) {
+  public ExampleGenerationRequest {
+    if (outputFormat == null) outputFormat = OutputFormat.JSON;
+  }
 
-    /**
-     * Convenience constructor that keeps the original four-component signature (JSON format).
-     */
-    public ExampleGenerationRequest(
-            String specFilePath,
-            Map<String, Integer> schemaExampleCounts,
-            String outputDirectory,
-            boolean combineOutput) {
-        this(specFilePath, schemaExampleCounts, outputDirectory, combineOutput, OutputFormat.JSON);
-    }
+  /** Convenience constructor that keeps the original four-component signature (JSON format). */
+  public ExampleGenerationRequest(
+      String specFilePath,
+      Map<String, Integer> schemaExampleCounts,
+      String outputDirectory,
+      boolean combineOutput) {
+    this(specFilePath, schemaExampleCounts, outputDirectory, combineOutput, OutputFormat.JSON);
+  }
 }
