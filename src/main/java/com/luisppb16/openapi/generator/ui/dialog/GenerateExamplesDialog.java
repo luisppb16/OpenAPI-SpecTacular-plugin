@@ -33,14 +33,6 @@ import com.luisppb16.openapi.generator.domain.service.ExampleGenerationDomainSer
 import com.luisppb16.openapi.generator.infrastructure.io.ExampleFileWriter;
 import com.luisppb16.openapi.generator.infrastructure.openapi.OpenApiSpecificationParser;
 import com.luisppb16.openapi.generator.settings.ExampleGeneratorSettings;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
@@ -52,6 +44,13 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
+import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableColumn;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Main dialog for the OpenAPI Example Generator plugin. Provides a modern, intuitive UI for
@@ -115,13 +114,12 @@ public class GenerateExamplesDialog extends DialogWrapper {
   }
 
   private static void commitSpinnerEdit(JSpinner spinner) {
-    SwingUtilities.invokeLater(
-        () -> {
-          try {
-            spinner.commitEdit();
-          } catch (ParseException ignored) {
-          }
-        });
+    SwingUtilities.invokeLater(() -> {
+      try {
+        spinner.commitEdit();
+      } catch (ParseException ignored) {
+      }
+    });
   }
 
   private static int intValue(JSpinner spinner) {
@@ -374,26 +372,24 @@ public class GenerateExamplesDialog extends DialogWrapper {
                 indicator.setText("Loading OpenAPI specification...");
                 try {
                   List<SchemaDefinition> schemas = applicationService.loadSchemas(specPath);
-                  SwingUtilities.invokeLater(
-                      () -> {
-                        loadedSchemas = schemas;
-                        tableModel.setSchemas(schemas, intValue(globalCountSpinner));
-                        updateTotalCount();
-                        statusLabel.setText("Found " + schemas.size() + " schema(s).");
-                        statusLabel.setForeground(JBColor.GREEN);
-                        parseButton.setEnabled(true);
-                      });
+                  SwingUtilities.invokeLater(() -> {
+                    loadedSchemas = schemas;
+                    tableModel.setSchemas(schemas, intValue(globalCountSpinner));
+                    updateTotalCount();
+                    statusLabel.setText("Found " + schemas.size() + " schema(s).");
+                    statusLabel.setForeground(JBColor.GREEN);
+                    parseButton.setEnabled(true);
+                  });
                 } catch (Exception ex) {
-                  SwingUtilities.invokeLater(
-                      () -> {
-                        statusLabel.setText("Parse error.");
-                        statusLabel.setForeground(JBColor.RED);
-                        Messages.showErrorDialog(
-                            project,
-                            "Failed to parse the OpenAPI specification:\n" + ex.getMessage(),
-                            "Parse Error");
-                        parseButton.setEnabled(true);
-                      });
+                  SwingUtilities.invokeLater(() -> {
+                    statusLabel.setText("Parse error.");
+                    statusLabel.setForeground(JBColor.RED);
+                    Messages.showErrorDialog(
+                        project,
+                        "Failed to parse the OpenAPI specification:\n" + ex.getMessage(),
+                        "Parse Error");
+                    parseButton.setEnabled(true);
+                  });
                 }
               }
             });
@@ -420,18 +416,16 @@ public class GenerateExamplesDialog extends DialogWrapper {
                 indicator.setIndeterminate(true);
                 try {
                   String preview = applicationService.renderPreview(request);
-                  SwingUtilities.invokeLater(
-                      () -> {
-                        previewArea.setText(preview);
-                        previewArea.setCaretPosition(0);
-                        copyPreviewButton.setEnabled(true);
-                      });
+                  SwingUtilities.invokeLater(() -> {
+                    previewArea.setText(preview);
+                    previewArea.setCaretPosition(0);
+                    copyPreviewButton.setEnabled(true);
+                  });
                 } catch (Exception ex) {
-                  SwingUtilities.invokeLater(
-                      () -> {
-                        previewArea.setText("Preview failed:\n" + ex.getMessage());
-                        copyPreviewButton.setEnabled(false);
-                      });
+                  SwingUtilities.invokeLater(() -> {
+                    previewArea.setText("Preview failed:\n" + ex.getMessage());
+                    copyPreviewButton.setEnabled(false);
+                  });
                 }
               }
             });
@@ -547,22 +541,20 @@ public class GenerateExamplesDialog extends DialogWrapper {
   }
 
   private void handleGenerationSuccess(int totalWritten, String outputDir) {
-    SwingUtilities.invokeLater(
-        () -> {
-          notifySuccess(totalWritten, outputDir);
-          generationCompleted = true;
-          getOKAction().putValue(Action.NAME, "Done");
-          getOKAction().setEnabled(true);
-        });
+    SwingUtilities.invokeLater(() -> {
+      notifySuccess(totalWritten, outputDir);
+      generationCompleted = true;
+      getOKAction().putValue(Action.NAME, "Done");
+      getOKAction().setEnabled(true);
+    });
   }
 
   private void handleGenerationError(Exception ex) {
-    SwingUtilities.invokeLater(
-        () -> {
-          Messages.showErrorDialog(
-              project, "Failed to generate examples:\n" + ex.getMessage(), "Generation Error");
-          getOKAction().setEnabled(true);
-        });
+    SwingUtilities.invokeLater(() -> {
+      Messages.showErrorDialog(
+          project, "Failed to generate examples:\n" + ex.getMessage(), "Generation Error");
+      getOKAction().setEnabled(true);
+    });
   }
 
   private void notifySuccess(int totalExamples, String outputDir) {

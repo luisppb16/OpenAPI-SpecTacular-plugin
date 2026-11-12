@@ -1,18 +1,8 @@
 plugins {
     id 'java'
-    id 'org.jetbrains.intellij.platform' version '2.19.0'
+    id 'org.jetbrains.intellij.platform' version '2.20.1'
     id 'jacoco'
-}
-
-sourceSets {
-    main {
-        java {
-            srcDirs = ['src/main/java']
-        }
-        resources {
-            srcDirs = ['src/main/resources']
-        }
-    }
+    id 'pmd'
 }
 
 group = 'com.LuisPPB16'
@@ -27,6 +17,7 @@ java {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     options.release = 25
+    options.compilerArgs << "-Xlint:all" << "-Werror" << "-Xlint:-processing" << "-Xlint:-rawtypes"
 }
 
 intellijPlatform {
@@ -39,6 +30,7 @@ intellijPlatform {
         ides {
             recommended()
         }
+        ignoredProblemsFile.set(file('config/pluginVerifier/ignored-problems.txt'))
     }
 }
 
@@ -51,7 +43,7 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        intellijIdea '2026.2'
+        intellijIdea '2026.3'
         bundledPlugin 'com.intellij.java'
     }
 
@@ -62,8 +54,8 @@ dependencies {
     }
 
     implementation 'io.swagger.parser.v3:swagger-parser:2.1.48'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.22.4'
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.22.4'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.23.0'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.23.0'
     compileOnly 'org.projectlombok:lombok:1.18.48'
     annotationProcessor 'org.projectlombok:lombok:1.18.48'
 
@@ -91,18 +83,15 @@ test {
     }
 }
 
-tasks.named('jacocoTestReport', JacocoReport) {
-    dependsOn tasks.named('test')
+jacocoTestReport {
     reports {
-        xml.getRequired().set(true)
-        html.getRequired().set(true)
+        xml.required = true
+        html.required = true
     }
 }
 
-tasks.named('buildSearchableOptions') {
-    enabled = false
-}
-
-tasks.named('jarSearchableOptions') {
-    enabled = false
+pmd {
+    toolVersion = '7.29.0'
+    ruleSets = []
+    ruleSetFiles = files('config/pmd/ruleset.xml')
 }

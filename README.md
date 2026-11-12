@@ -19,8 +19,8 @@ IntelliJ IDEA plugin that generates realistic JSON example data from OpenAPI (3.
 
 | Requirement   | Version |
 |---------------|---------|
-| IntelliJ IDEA | 2025.1  |
-| Java          | 21      |
+| IntelliJ IDEA | 2026.3  |
+| Java          | 25      |
 
 ## Installation
 
@@ -147,6 +147,13 @@ Run tests:
 ```bash
 ./gradlew test
 ```
+
+## 📝 Changelog
+
+### 1.1.2
+
+- **Build/compatibility release:** targets IntelliJ IDEA 2026.3 (since-build `263`), dependencies updated (Jackson 2.23.0), CI upgraded to JDK 25.
+- PMD 7.29.0 with the production ruleset and Spotless (Google Java Format) wired into `check`; strict plugin verification with the full failure-level list.
 
 ## License
 

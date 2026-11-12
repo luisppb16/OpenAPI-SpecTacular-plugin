@@ -9,18 +9,15 @@ package com.luisppb16.openapi.generator.ui.action;
 
 import com.intellij.openapi.vfs.VirtualFile;
 
-/**
- * Shared helpers for detecting OpenAPI candidate files.
- */
+/** Shared helpers for detecting OpenAPI candidate files. */
 final class OpenApiFiles {
 
-    private OpenApiFiles() {
-    }
+  private OpenApiFiles() {}
 
-    static boolean isOpenApiFile(VirtualFile file) {
-        String ext = file.getExtension();
-        return "yaml".equalsIgnoreCase(ext)
-                || "yml".equalsIgnoreCase(ext)
-                || "json".equalsIgnoreCase(ext);
-    }
+  static boolean isOpenApiFile(VirtualFile file) {
+    String ext = file.getExtension();
+    return "yaml".equalsIgnoreCase(ext)
+        || "yml".equalsIgnoreCase(ext)
+        || "json".equalsIgnoreCase(ext);
+  }
 }

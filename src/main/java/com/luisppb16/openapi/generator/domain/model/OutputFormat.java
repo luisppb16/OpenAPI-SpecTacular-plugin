@@ -7,28 +7,26 @@
 
 package com.luisppb16.openapi.generator.domain.model;
 
-/**
- * Supported serialization formats for generated example files.
- */
+/** Supported serialization formats for generated example files. */
 public enum OutputFormat {
-    JSON("json"),
-    YAML("yaml");
+  JSON("json"),
+  YAML("yaml");
 
-    private final String extension;
+  private final String extension;
 
-    OutputFormat(String extension) {
-        this.extension = extension;
+  OutputFormat(String extension) {
+    this.extension = extension;
+  }
+
+  public static OutputFormat fromName(String name) {
+    try {
+      return OutputFormat.valueOf(name);
+    } catch (IllegalArgumentException | NullPointerException wrongValue) {
+      return JSON;
     }
+  }
 
-    public String extension() {
-        return extension;
-    }
-
-    public static OutputFormat fromName(String name) {
-        try {
-            return OutputFormat.valueOf(name);
-        } catch (IllegalArgumentException | NullPointerException wrongValue) {
-            return JSON;
-        }
-    }
+  public String extension() {
+    return extension;
+  }
 }

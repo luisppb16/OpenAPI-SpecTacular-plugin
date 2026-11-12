@@ -40,7 +40,7 @@
         </ul>
     ]]></change-notes>
 
-    <idea-version since-build="262"/>
+    <idea-version since-build="263"/>
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">

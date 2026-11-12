@@ -58,35 +58,30 @@ public class OpenApiSpecificationParser {
       Set<String> schemaNames =
           schemas.stream().map(SchemaDefinition::name).collect(Collectors.toSet());
       openAPI.getPaths().entrySet().stream()
-          .flatMap(
-              pathEntry -> {
-                PathItem pathItem = pathEntry.getValue();
-                String path = pathEntry.getKey();
-                if (pathItem.readOperationsMap() == null) {
-                  return Stream.empty();
-                }
-                return pathItem.readOperationsMap().entrySet().stream()
-                    .flatMap(
-                        operationEntry -> {
-                          PathItem.HttpMethod method = operationEntry.getKey();
-                          Operation operation = operationEntry.getValue();
-                          if (operation.getRequestBody() == null
-                              || operation.getRequestBody().getContent() == null) {
-                            return Stream.empty();
-                          }
-                          return operation.getRequestBody().getContent().values().stream()
-                              .filter(
-                                  mediaType ->
-                                      mediaType.getSchema() != null
-                                          && mediaType.getSchema().getProperties() != null)
-                              .map(
-                                  mediaType -> {
-                                    String schemaName =
-                                        buildSchemaNameFromPath(method.toString(), path);
-                                    return Map.entry(schemaName, mediaType.getSchema());
-                                  });
-                        });
-              })
+          .flatMap(pathEntry -> {
+            PathItem pathItem = pathEntry.getValue();
+            String path = pathEntry.getKey();
+            if (pathItem.readOperationsMap() == null) {
+              return Stream.empty();
+            }
+            return pathItem.readOperationsMap().entrySet().stream()
+                .flatMap(operationEntry -> {
+                  PathItem.HttpMethod method = operationEntry.getKey();
+                  Operation operation = operationEntry.getValue();
+                  if (operation.getRequestBody() == null
+                      || operation.getRequestBody().getContent() == null) {
+                    return Stream.empty();
+                  }
+                  return operation.getRequestBody().getContent().values().stream()
+                      .filter(mediaType ->
+                          mediaType.getSchema() != null
+                              && mediaType.getSchema().getProperties() != null)
+                      .map(mediaType -> {
+                        String schemaName = buildSchemaNameFromPath(method.toString(), path);
+                        return Map.entry(schemaName, mediaType.getSchema());
+                      });
+                });
+          })
           .filter(entry -> schemaNames.add(entry.getKey()))
           .map(entry -> convertSchema(entry.getKey(), entry.getValue(), components))
           .forEach(schemas::add);
@@ -176,13 +171,12 @@ public class OpenApiSpecificationParser {
             : new HashSet<>();
 
     return targetSchema.getProperties().entrySet().stream()
-        .map(
-            entry ->
-                convertProperty(
-                    entry.getKey(),
-                    entry.getValue(),
-                    requiredFields.contains(entry.getKey()),
-                    components))
+        .map(entry ->
+            convertProperty(
+                entry.getKey(),
+                entry.getValue(),
+                requiredFields.contains(entry.getKey()),
+                components))
         .toList();
   }
 

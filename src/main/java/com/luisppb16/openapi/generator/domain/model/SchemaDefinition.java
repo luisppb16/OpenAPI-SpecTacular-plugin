@@ -14,8 +14,8 @@ import java.util.List;
  * array type.
  */
 public record SchemaDefinition(
-        String name, String description, List<PropertyDefinition> properties, boolean isArrayType) {
-    public SchemaDefinition {
-        properties = properties == null ? List.of() : List.copyOf(properties);
-    }
+    String name, String description, List<PropertyDefinition> properties, boolean isArrayType) {
+  public SchemaDefinition {
+    properties = properties == null ? List.of() : List.copyOf(properties);
+  }
 }

@@ -207,10 +207,9 @@ public class ExampleGenerationDomainService {
       return array;
     }
     IntStream.range(0, size)
-        .forEach(
-            i ->
-                array.add(
-                    generatePropertyValue(prop.items(), ctx.deeper().withIndex(ctx.index() + i))));
+        .forEach(i ->
+            array.add(
+                generatePropertyValue(prop.items(), ctx.deeper().withIndex(ctx.index() + i))));
     return array;
   }
 
